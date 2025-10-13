@@ -1,0 +1,23 @@
+{
+  "name": "construction-doc-assistant",
+  "version": "1.0.0",
+  "description": "建筑施工文档智能助手 - 提供文档索引、完整性检查、智能分析和报告生成功能",
+  "author": {
+    "name": "Construction Team"
+  },
+  "homepage": "https://github.com/z1w2r3/construction-marketplace",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/z1w2r3/construction-marketplace.git"
+  },
+  "keywords": [
+    "建筑施工",
+    "文档管理",
+    "资料检查",
+    "项目管理",
+    "construction",
+    "document-management"
+  ],
+  "license": "MIT",
+  "commands": "./commands"
+}

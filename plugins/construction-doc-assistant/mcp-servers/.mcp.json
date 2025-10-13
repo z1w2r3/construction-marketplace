@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "construction-doc-processor": {
+      "command": "python3",
+      "args": ["-m", "document_processor.server"],
+      "env": {
+        "PYTHONPATH": "${CLAUDE_PLUGIN_ROOT}/mcp-servers"
+      },
+      "description": "建筑文档处理工具 - Word/Excel/PDF 文档解析和分析"
+    }
+  }
+}
