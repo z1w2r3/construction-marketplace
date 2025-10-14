@@ -1,9 +1,9 @@
 {
   "mcpServers": {
     "construction-doc-processor": {
-      "command": "python3",
+      "command": "${CLAUDE_PLUGIN_ROOT}/mcp-servers/document-processor/venv/bin/python",
       "args": [
-        "/Users/zhengwr/workspace/baogao1/construction-marketplace/plugins/construction-doc-assistant/mcp-servers/document-processor/server.py"
+        "${CLAUDE_PLUGIN_ROOT}/mcp-servers/document-processor/server.py"
       ],
       "env": {
         "PYTHONPATH": "${CLAUDE_PLUGIN_ROOT}/mcp-servers",

@@ -40,22 +40,85 @@
 
 ## 安装
 
+⚠️ **重要**: MCP 服务器的 Python 依赖需要单独安装,Claude Code 不会自动安装。
+
+### 方式1: 使用自动安装脚本(推荐)
+
 ```bash
-# 安装依赖
 cd mcp-servers/document-processor
-pip install -r requirements.txt
+./install.sh
 ```
 
-## 测试
+安装脚本会:
+1. 检测 Python 版本(需要 3.8+)
+2. 创建虚拟环境(可选但推荐)
+3. 安装所有 Python 依赖
+4. 安装系统依赖(macOS: libmagic)
+5. 验证安装是否成功
+
+### 方式2: 手动安装
 
 ```bash
-# 测试服务器是否可以启动
-python3 server.py
+cd mcp-servers/document-processor
+
+# 创建虚拟环境
+python3 -m venv venv
+source venv/bin/activate  # macOS/Linux
+# 或 venv\Scripts\activate  # Windows
+
+# 安装依赖
+pip install -r requirements.txt
+
+# macOS 用户需要安装 libmagic
+brew install libmagic
+```
+
+## 配置说明
+
+插件的 `.mcp.json` 配置文件会自动使用虚拟环境中的 Python:
+
+```json
+{
+  "command": "${CLAUDE_PLUGIN_ROOT}/mcp-servers/document-processor/venv/bin/python",
+  "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-servers/document-processor/server.py"]
+}
+```
+
+`${CLAUDE_PLUGIN_ROOT}` 会自动解析为插件安装目录。
+
+## 验证安装
+
+### 测试 Python 依赖
+
+```bash
+cd mcp-servers/document-processor
+source venv/bin/activate
+python -c "import mcp, docx, openpyxl, pptx, PyPDF2; print('✓ 所有依赖已安装')"
+```
+
+### 测试 MCP 服务器
+
+```bash
+cd mcp-servers/document-processor
+source venv/bin/activate
+python server.py
+```
+
+如果看到类似输出表示服务器可以正常启动:
+```
+INFO:mcp.server.stdio:Server running
 ```
 
 ## 使用
 
-此 MCP 服务器通过 Claude Code 插件自动启动和管理。在命令文件中可以直接调用工具。
+此 MCP 服务器通过 Claude Code 插件自动启动和管理。
+
+安装插件后:
+1. ✅ MCP 服务器配置自动加载
+2. ✅ 插件启用时服务器自动启动
+3. ✅ 在命令文件中可以直接调用工具
+
+**重启后生效**: 修改 MCP 配置后需要重启 Claude Code/VSCode。
 
 ## 开发注意事项
 

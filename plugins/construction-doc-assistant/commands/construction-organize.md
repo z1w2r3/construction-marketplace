@@ -47,7 +47,7 @@ find "原文档目录" -type f | head -50
 对扫描到的文档进行批量元数据分析:
 
 ```
-使用 mcp__docxtpl__get_document_metadata 工具:
+使用 mcp__construction_doc_processor__get_document_metadata 工具:
 - file_path: [每个文档路径]
 
 获取信息:

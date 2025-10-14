@@ -80,7 +80,7 @@ find "原文档目录" -type f -name "*.pdf" | wc -l
 对找到的关键文档进行验证:
 
 ```
-使用 mcp__docxtpl__validate_document 工具:
+使用 mcp__construction_doc_processor__validate_document 工具:
 - file_path: [文档绝对路径]
 
 验证目的:
@@ -100,7 +100,7 @@ find "原文档目录" -type f -name "*.pdf" | wc -l
 ```
 例如检查验收记录文档:
 
-1. 使用 mcp__docxtpl__parse_docx_document 读取:
+1. 使用 mcp__construction_doc_processor__parse_word_document 读取:
    - file_path: [文档路径]
    - include_tables: true
 
@@ -127,11 +127,11 @@ find "原文档目录" -type f -name "*.pdf" | wc -l
 文档: 主体结构验收记录.docx
 
 第一步: 验证文档
-mcp__docxtpl__validate_document
+mcp__construction_doc_processor__validate_document
 → valid: true, 文档可读
 
 第二步: 解析内容
-mcp__docxtpl__parse_docx_document
+mcp__construction_doc_processor__parse_word_document
 → 成功解析,提取段落和表格
 
 第三步: 检查必要内容
@@ -163,7 +163,7 @@ mcp__docxtpl__parse_docx_document
 
 策略 3: 元数据快速检查
 对不需要详细检查的文档:
-mcp__docxtpl__get_document_metadata:
+mcp__construction_doc_processor__get_document_metadata:
   - file_path: [文档路径]
 快速获取文件大小、修改时间等信息
 ```
@@ -249,8 +249,8 @@ mcp__docxtpl__get_document_metadata:
 
 ```
 回退策略:
-1. 尝试使用 validate_document 验证
-2. 验证失败则尝试 get_document_metadata
+1. 尝试使用 mcp__construction_doc_processor__validate_document 验证
+2. 验证失败则尝试 mcp__construction_doc_processor__get_document_metadata
 3. 元数据也无法获取则标记为"🔧 需修复"
 4. 在报告中明确说明问题和建议
 
@@ -476,7 +476,7 @@ mcp__docxtpl__get_document_metadata:
 
 **验证方式**:
 - 文档存在性: Bash find 命令扫描
-- 文档可读性: MCP validate_document 工具验证
+- 文档可读性: MCP mcp__construction_doc_processor__validate_document 工具验证
 - 内容完整性: MCP parse 工具深度检查
 
 **准确性说明**:

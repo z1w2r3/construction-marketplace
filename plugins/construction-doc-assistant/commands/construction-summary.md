@@ -64,7 +64,7 @@ find "原文档目录" -type f -name "*[年月]*.docx"
 #### 4.1 验证文档可读性
 
 ```
-使用 mcp__docxtpl__validate_document 工具验证:
+使用 mcp__construction_doc_processor__validate_document 工具验证:
 - file_path: [文档绝对路径]
 
 返回结果:
@@ -78,33 +78,35 @@ find "原文档目录" -type f -name "*[年月]*.docx"
 
 #### 4.2 选择合适的解析工具
 
-根据文件扩展名选择对应的 MCP 工具:
+根据文件扩展名选择对应的插件 MCP 工具:
 
 ```
-- .docx → 使用 mcp__docxtpl__parse_docx_document
+- .docx → 使用 mcp__construction_doc_processor__parse_word_document
   参数:
     - file_path: [文档路径]
-    - include_tables: true
+    - extract_tables: true
 
-- .xlsx → 使用 mcp__docxtpl__parse_excel_document
+- .xlsx → 使用 mcp__construction_doc_processor__parse_excel_document
   参数:
     - file_path: [文档路径]
-    - include_formulas: false
+    - max_rows: 100
 
-- .pptx → 使用 mcp__docxtpl__parse_docx_document (如果工具支持)
-  或使用 Read 工具读取基本信息
-
-- .pdf → 使用 mcp__docxtpl__parse_pdf_document
+- .pptx → 使用 mcp__construction_doc_processor__parse_powerpoint_document
   参数:
     - file_path: [文档路径]
-    - include_tables: true
-    - pages: "all"
+    - extract_notes: true
+
+- .pdf → 使用 mcp__construction_doc_processor__parse_pdf_document
+  参数:
+    - file_path: [文档路径]
+    - extract_tables: false
+    - max_pages: 50
 ```
 
 **解析示例**:
 ```
 对于 Word 文档:
-mcp__docxtpl__parse_docx_document:
+mcp__construction_doc_processor__parse_word_document:
   - file_path: /Volumes/MOVESPEED/projectDocs2/项目概况.docx
   - include_tables: true
 
@@ -150,7 +152,7 @@ mcp__docxtpl__parse_docx_document:
 
 策略 3: 元数据快速浏览
 对不需要详细读取的文档,使用:
-mcp__docxtpl__get_document_metadata:
+mcp__construction_doc_processor__get_document_metadata:
   - file_path: [文档路径]
 仅获取文件名、大小、修改时间等信息
 ```
@@ -163,11 +165,11 @@ mcp__docxtpl__get_document_metadata:
 
 ```
 第一步: 尝试验证
-使用 validate_document 检查文档
+使用 mcp__construction_doc_processor__validate_document 检查文档
 
 第二步: 尝试获取元数据
 如果验证失败,尝试:
-mcp__docxtpl__get_document_metadata
+mcp__construction_doc_processor__get_document_metadata
 
 第三步: 友好提示
 在报告中标注:

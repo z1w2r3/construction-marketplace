@@ -40,7 +40,7 @@ find "原文档目录" -type f \( -name "*会议*.docx" -o -name "*纪要*.docx"
 对找到的每个关键文档:
 
 ```
-使用 mcp__docxtpl__validate_document 工具:
+使用 mcp__construction_doc_processor__validate_document 工具:
 - file_path: [文档路径]
 
 如果验证失败:
@@ -55,7 +55,7 @@ find "原文档目录" -type f \( -name "*会议*.docx" -o -name "*纪要*.docx"
 
 ```
 计划类文档 (.docx, .pdf):
-使用 mcp__docxtpl__parse_docx_document 或 parse_pdf_document:
+使用 mcp__construction_doc_processor__parse_word_document 或 mcp__construction_doc_processor__parse_pdf_document:
   - file_path: [文档路径]
   - include_tables: true
 
@@ -66,7 +66,7 @@ find "原文档目录" -type f \( -name "*会议*.docx" -o -name "*纪要*.docx"
 - 分部分项工程计划时间
 
 进度报告 (.xlsx, .docx):
-使用 mcp__docxtpl__parse_excel_document 或 parse_docx_document:
+使用 mcp__construction_doc_processor__parse_excel_document 或 mcp__construction_doc_processor__parse_word_document:
   - file_path: [文档路径]
 
 提取关键信息:
