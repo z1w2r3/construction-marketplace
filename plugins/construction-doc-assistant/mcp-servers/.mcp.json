@@ -2,11 +2,26 @@
   "mcpServers": {
     "construction-doc-processor": {
       "command": "python3",
-      "args": ["-m", "document_processor.server"],
+      "args": [
+        "/Users/zhengwr/workspace/baogao1/construction-marketplace/plugins/construction-doc-assistant/mcp-servers/document-processor/server.py"
+      ],
       "env": {
-        "PYTHONPATH": "${CLAUDE_PLUGIN_ROOT}/mcp-servers"
+        "PYTHONPATH": "${CLAUDE_PLUGIN_ROOT}/mcp-servers",
+        "LOG_LEVEL": "INFO",
+        "MAX_FILE_SIZE": "104857600",
+        "ENABLE_CACHE": "true"
       },
-      "description": "建筑文档处理工具 - Word/Excel/PDF 文档解析和分析"
+      "description": "建筑文档处理工具 - 增强版 v1.1.0",
+      "capabilities": [
+        "文档验证 (validate_document)",
+        "Word 文档解析 (parse_word_document)",
+        "Excel 文档解析 (parse_excel_document)",
+        "PowerPoint 文档解析 (parse_powerpoint_document)",
+        "PDF 文档解析 (parse_pdf_document)",
+        "智能摘要提取 (extract_document_summary)",
+        "批量文档处理 (batch_parse_documents)",
+        "文档元数据获取 (get_document_metadata)"
+      ]
     }
   }
 }

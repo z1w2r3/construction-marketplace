@@ -1,11 +1,37 @@
-# MCP SDK
+# ============================================
+# 建筑文档处理 MCP 服务器依赖
+# ============================================
+
+# ----- MCP 核心 -----
 mcp>=1.0.0
 
-# 文档处理库
-python-docx>=1.1.0
-openpyxl>=3.1.0
-PyPDF2>=3.0.0
-pdfplumber>=0.10.0
+# ----- Office 文档处理 -----
+python-docx>=1.1.0              # Word (.docx)
+openpyxl>=3.1.0                 # Excel (.xlsx)
+python-pptx>=0.6.23             # PowerPoint (.pptx)
+xlrd>=2.0.1                     # Excel 旧格式 (.xls) - 可选
 
-# 辅助库
-chardet>=5.0.0
+# ----- PDF 处理 -----
+PyPDF2>=3.0.0                   # 基础 PDF 读取
+pypdf>=3.17.0                   # PDF 元数据
+pdfplumber>=0.10.0              # 高级 PDF 解析(表格提取) - 可选
+
+# ----- 文件类型检测 -----
+python-magic>=0.4.27; sys_platform != 'win32'  # MIME 类型检测 (非 Windows)
+filetype>=1.2.0                 # 文件格式识别 (跨平台替代方案)
+
+# ----- 文本处理 -----
+chardet>=5.2.0                  # 字符编码检测
+
+# ----- 数据处理 (可选) -----
+pandas>=2.0.0                   # Excel 数据分析
+numpy>=1.24.0                   # 数值计算
+
+# ----- 日志和调试 -----
+# loguru>=0.7.0                 # 增强日志 (可选，当前使用标准库)
+
+# ----- 开发工具 (仅开发环境) -----
+# pytest>=7.4.0                 # 单元测试
+# pytest-asyncio>=0.21.0        # 异步测试
+# black>=23.0.0                 # 代码格式化
+# flake8>=6.0.0                 # 代码检查

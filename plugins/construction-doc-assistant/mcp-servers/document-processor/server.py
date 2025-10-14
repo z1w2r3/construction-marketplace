@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
 """
-建筑施工文档处理 MCP 服务器
-提供 Word、Excel、PDF 文档的解析和分析功能
+建筑施工文档处理 MCP 服务器 - 增强版
+提供完整的 Word、Excel、PowerPoint、PDF 文档解析和智能分析功能
 """
 
 import sys
-import logging
 import os
+import json
 from typing import Any
-from datetime import datetime
 
-# 配置日志 - 重要: 只能写到 stderr,不能写到 stdout
-logging.basicConfig(
-    level=logging.INFO,
-    stream=sys.stderr,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# 添加当前目录到 Python 路径
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# 导入工具模块
+from utils import get_logger, setup_logger, handle_error, handle_file_error, ErrorHandler
+from validators import validate_document, batch_validate_documents
+from parsers import parse_document, batch_parse_documents
+from extractors import extract_summary, extract_construction_summary
+
+# 设置日志
+logger = setup_logger("mcp_server", level="INFO")
 
 # 尝试导入 MCP SDK
 try:
@@ -25,19 +28,39 @@ try:
     from mcp.server.stdio import stdio_server
 except ImportError as e:
     logger.error(f"MCP SDK 未安装: {e}")
-    logger.error("请运行: pip install mcp python-docx openpyxl PyPDF2")
+    logger.error("请运行: pip install mcp")
     sys.exit(1)
 
 # 创建 MCP 服务器实例
 server = Server("construction-doc-processor")
 
+logger.info("建筑施工文档处理 MCP 服务器初始化...")
+
+
 @server.list_tools()
 async def list_tools() -> list[Tool]:
     """列出所有可用工具"""
     return [
+        # 1. 文档验证工具
+        Tool(
+            name="validate_document",
+            description="验证文档是否可读，返回文档基本信息和可读性状态",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "文档的绝对路径"
+                    }
+                },
+                "required": ["file_path"]
+            }
+        ),
+
+        # 2. Word 文档解析
         Tool(
             name="parse_word_document",
-            description="解析 Word 文档,提取文本、表格和元数据",
+            description="解析 Word 文档，提取文本、表格、标题结构和元数据",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -47,16 +70,27 @@ async def list_tools() -> list[Tool]:
                     },
                     "extract_tables": {
                         "type": "boolean",
-                        "description": "是否提取表格(默认 true)",
+                        "description": "是否提取表格（默认 true）",
                         "default": True
+                    },
+                    "max_paragraphs": {
+                        "type": "integer",
+                        "description": "最大段落数限制（可选）"
+                    },
+                    "keywords": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "关注的关键词列表（可选）"
                     }
                 },
                 "required": ["file_path"]
             }
         ),
+
+        # 3. Excel 文档解析
         Tool(
             name="parse_excel_document",
-            description="解析 Excel 文档,提取工作表和单元格数据",
+            description="解析 Excel 文档，提取工作表和单元格数据",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -66,29 +100,123 @@ async def list_tools() -> list[Tool]:
                     },
                     "sheet_name": {
                         "type": "string",
-                        "description": "工作表名称(可选,默认读取所有)"
+                        "description": "指定工作表名称（可选）"
+                    },
+                    "max_rows": {
+                        "type": "integer",
+                        "description": "每个工作表最大行数（默认 100）",
+                        "default": 100
                     }
                 },
                 "required": ["file_path"]
             }
         ),
+
+        # 4. PowerPoint 文档解析
+        Tool(
+            name="parse_powerpoint_document",
+            description="解析 PowerPoint 文档，提取幻灯片内容、标题和备注",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "PowerPoint 文档的绝对路径"
+                    },
+                    "max_slides": {
+                        "type": "integer",
+                        "description": "最大幻灯片数（默认 50）",
+                        "default": 50
+                    },
+                    "extract_notes": {
+                        "type": "boolean",
+                        "description": "是否提取备注（默认 true）",
+                        "default": True
+                    }
+                },
+                "required": ["file_path"]
+            }
+        ),
+
+        # 5. PDF 文档解析
         Tool(
             name="parse_pdf_document",
-            description="解析 PDF 文档,提取文本和元数据",
+            description="解析 PDF 文档，提取文本和元数据",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "file_path": {
                         "type": "string",
                         "description": "PDF 文档的绝对路径"
+                    },
+                    "max_pages": {
+                        "type": "integer",
+                        "description": "最大页数（默认 50）",
+                        "default": 50
+                    },
+                    "extract_tables": {
+                        "type": "boolean",
+                        "description": "是否提取表格（需要 pdfplumber，默认 false）",
+                        "default": False
                     }
                 },
                 "required": ["file_path"]
             }
         ),
+
+        # 6. 智能摘要提取
+        Tool(
+            name="extract_document_summary",
+            description="从解析后的文档中智能提取摘要，支持关键词过滤",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "文档的绝对路径"
+                    },
+                    "focus_keywords": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "关注的关键词列表，如 ['进度', '质量', '安全']"
+                    },
+                    "max_length": {
+                        "type": "integer",
+                        "description": "摘要最大字符数（默认 2000）",
+                        "default": 2000
+                    }
+                },
+                "required": ["file_path"]
+            }
+        ),
+
+        # 7. 批量文档处理
+        Tool(
+            name="batch_parse_documents",
+            description="批量解析多个文档，返回统一格式的结果",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "file_paths": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "文档路径列表"
+                    },
+                    "extract_mode": {
+                        "type": "string",
+                        "enum": ["full", "summary", "metadata"],
+                        "description": "提取模式：full=完整内容，summary=摘要，metadata=仅元数据",
+                        "default": "summary"
+                    }
+                },
+                "required": ["file_paths"]
+            }
+        ),
+
+        # 8. 文档元数据获取
         Tool(
             name="get_document_metadata",
-            description="获取文档元数据(创建时间、修改时间、大小等)",
+            description="获取文档基本元数据（文件大小、创建时间、修改时间等）",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -102,244 +230,275 @@ async def list_tools() -> list[Tool]:
         )
     ]
 
+
 @server.call_tool()
 async def call_tool(name: str, arguments: Any) -> list[TextContent]:
     """执行工具调用"""
     try:
-        logger.info(f"调用工具: {name}, 参数: {arguments}")
+        logger.info(f"调用工具: {name}")
+        logger.debug(f"参数: {arguments}")
 
-        if name == "parse_word_document":
-            return await parse_word_document(
-                arguments["file_path"],
-                arguments.get("extract_tables", True)
-            )
-        elif name == "parse_excel_document":
-            return await parse_excel_document(
-                arguments["file_path"],
-                arguments.get("sheet_name")
-            )
-        elif name == "parse_pdf_document":
-            return await parse_pdf_document(arguments["file_path"])
-        elif name == "get_document_metadata":
-            return await get_document_metadata(arguments["file_path"])
-        else:
-            raise ValueError(f"未知工具: {name}")
-    except Exception as e:
-        logger.error(f"工具执行错误: {e}", exc_info=True)
-        return [TextContent(
-            type="text",
-            text=f"错误: {str(e)}"
-        )]
-
-async def parse_word_document(file_path: str, extract_tables: bool) -> list[TextContent]:
-    """解析 Word 文档"""
-    try:
-        from docx import Document
-    except ImportError:
-        return [TextContent(
-            type="text",
-            text="错误: python-docx 未安装。请运行: pip install python-docx"
-        )]
-
-    try:
-        doc = Document(file_path)
-
-        # 提取段落文本
-        paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
-
-        result = {
-            "file_path": file_path,
-            "file_name": os.path.basename(file_path),
-            "paragraph_count": len(paragraphs),
-            "paragraphs_preview": paragraphs[:10],  # 只返回前10段
-            "tables": []
-        }
-
-        # 提取表格
-        if extract_tables and doc.tables:
-            for i, table in enumerate(doc.tables):
-                table_data = []
-                for row in table.rows:
-                    table_data.append([cell.text for cell in row.cells])
-                result["tables"].append({
-                    "table_index": i + 1,
-                    "rows": len(table.rows),
-                    "cols": len(table.columns),
-                    "data_preview": table_data[:5]  # 只返回前5行
-                })
-
-        return [TextContent(
-            type="text",
-            text=f"""Word 文档解析完成:
-
-文件: {result['file_name']}
-段落数: {result['paragraph_count']}
-表格数: {len(result['tables'])}
-
-段落预览(前10段):
-{chr(10).join(f'{i+1}. {p[:100]}...' if len(p) > 100 else f'{i+1}. {p}' for i, p in enumerate(result['paragraphs_preview']))}
-
-{'表格信息:' if result['tables'] else ''}
-{chr(10).join(f'表格{t["table_index"]}: {t["rows"]}行 x {t["cols"]}列' for t in result['tables'])}
-"""
-        )]
-    except Exception as e:
-        return [TextContent(
-            type="text",
-            text=f"Word 文档解析失败: {str(e)}"
-        )]
-
-async def parse_excel_document(file_path: str, sheet_name: str = None) -> list[TextContent]:
-    """解析 Excel 文档"""
-    try:
-        from openpyxl import load_workbook
-    except ImportError:
-        return [TextContent(
-            type="text",
-            text="错误: openpyxl 未安装。请运行: pip install openpyxl"
-        )]
-
-    try:
-        wb = load_workbook(file_path, read_only=True, data_only=True)
-
-        result = {
-            "file_path": file_path,
-            "file_name": os.path.basename(file_path),
-            "sheet_names": wb.sheetnames,
-            "sheets": []
-        }
-
-        # 读取指定工作表或所有工作表
-        sheets_to_read = [sheet_name] if sheet_name else wb.sheetnames[:3]  # 最多读取3个工作表
-
-        for name in sheets_to_read:
-            if name not in wb.sheetnames:
-                continue
-            ws = wb[name]
-            data = []
-            for i, row in enumerate(ws.iter_rows(values_only=True)):
-                if i >= 10:  # 只读取前10行
-                    break
-                data.append(list(row))
-
-            result["sheets"].append({
-                "name": name,
-                "rows": ws.max_row,
-                "cols": ws.max_column,
-                "data_preview": data
-            })
-
-        output = f"""Excel 文档解析完成:
-
-文件: {result['file_name']}
-工作表数: {len(result['sheet_names'])}
-工作表列表: {', '.join(result['sheet_names'])}
-
-"""
-        for sheet in result["sheets"]:
-            output += f"\n工作表: {sheet['name']}\n"
-            output += f"大小: {sheet['rows']}行 x {sheet['cols']}列\n"
-            output += f"数据预览(前10行):\n"
-            for i, row in enumerate(sheet['data_preview'], 1):
-                row_str = ' | '.join(str(cell) if cell is not None else '' for cell in row)
-                output += f"  {i}. {row_str[:100]}...\n" if len(row_str) > 100 else f"  {i}. {row_str}\n"
-
-        return [TextContent(type="text", text=output)]
-    except Exception as e:
-        return [TextContent(
-            type="text",
-            text=f"Excel 文档解析失败: {str(e)}"
-        )]
-
-async def parse_pdf_document(file_path: str) -> list[TextContent]:
-    """解析 PDF 文档"""
-    try:
-        import PyPDF2
-    except ImportError:
-        return [TextContent(
-            type="text",
-            text="错误: PyPDF2 未安装。请运行: pip install PyPDF2"
-        )]
-
-    try:
-        with open(file_path, 'rb') as f:
-            reader = PyPDF2.PdfReader(f)
-
-            result = {
-                "file_path": file_path,
-                "file_name": os.path.basename(file_path),
-                "page_count": len(reader.pages),
-                "pages": []
-            }
-
-            # 提取前3页文本
-            for i in range(min(3, len(reader.pages))):
-                page = reader.pages[i]
-                text = page.extract_text()
-                result["pages"].append({
-                    "page_number": i + 1,
-                    "text_length": len(text),
-                    "text_preview": text[:500]  # 前500字符
-                })
-
-            output = f"""PDF 文档解析完成:
-
-文件: {result['file_name']}
-总页数: {result['page_count']}
-
-页面预览(前3页):
-"""
-            for page in result["pages"]:
-                output += f"\n第{page['page_number']}页 (共{page['text_length']}字符):\n"
-                output += f"{page['text_preview']}...\n"
-
-            return [TextContent(type="text", text=output)]
-    except Exception as e:
-        return [TextContent(
-            type="text",
-            text=f"PDF 文档解析失败: {str(e)}"
-        )]
-
-async def get_document_metadata(file_path: str) -> list[TextContent]:
-    """获取文档元数据"""
-    try:
-        if not os.path.exists(file_path):
+        # 1. 文档验证
+        if name == "validate_document":
+            result = validate_document(arguments["file_path"])
             return [TextContent(
                 type="text",
-                text=f"错误: 文件不存在: {file_path}"
+                text=_format_validation_result(result)
             )]
 
-        stat = os.stat(file_path)
+        # 2-5. 文档解析工具
+        elif name in ["parse_word_document", "parse_excel_document",
+                      "parse_powerpoint_document", "parse_pdf_document"]:
+            result = parse_document(arguments["file_path"], arguments)
+            return [TextContent(
+                type="text",
+                text=_format_parse_result(result)
+            )]
 
-        result = {
-            "file_path": file_path,
-            "file_name": os.path.basename(file_path),
-            "file_size": stat.st_size,
-            "file_size_mb": round(stat.st_size / (1024 * 1024), 2),
-            "created_time": datetime.fromtimestamp(stat.st_ctime).strftime('%Y-%m-%d %H:%M:%S'),
-            "modified_time": datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S'),
-            "file_extension": os.path.splitext(file_path)[1]
-        }
+        # 6. 智能摘要提取
+        elif name == "extract_document_summary":
+            # 先解析文档
+            parsed = parse_document(arguments["file_path"])
 
-        output = f"""文档元数据:
+            # 提取摘要
+            summary = extract_summary(
+                parsed,
+                focus_keywords=arguments.get("focus_keywords"),
+                max_length=arguments.get("max_length", 2000)
+            )
 
-文件名: {result['file_name']}
-文件大小: {result['file_size_mb']} MB ({result['file_size']} 字节)
-文件类型: {result['file_extension']}
-创建时间: {result['created_time']}
-修改时间: {result['modified_time']}
-文件路径: {result['file_path']}
-"""
-        return [TextContent(type="text", text=output)]
+            return [TextContent(
+                type="text",
+                text=_format_summary_result(summary)
+            )]
+
+        # 7. 批量处理
+        elif name == "batch_parse_documents":
+            results = batch_parse_documents(arguments["file_paths"], arguments)
+            return [TextContent(
+                type="text",
+                text=_format_batch_result(results)
+            )]
+
+        # 8. 元数据获取
+        elif name == "get_document_metadata":
+            result = validate_document(arguments["file_path"])
+            if result["valid"]:
+                return [TextContent(
+                    type="text",
+                    text=_format_metadata(result["file_info"])
+                )]
+            else:
+                return [TextContent(
+                    type="text",
+                    text=f"❌ 错误: {', '.join(result['errors'])}"
+                )]
+
+        else:
+            raise ValueError(f"未知工具: {name}")
+
     except Exception as e:
+        logger.error(f"工具执行错误: {e}", exc_info=True)
+        error_result = handle_error(e, {"tool": name, "arguments": arguments})
         return [TextContent(
             type="text",
-            text=f"获取元数据失败: {str(e)}"
+            text=ErrorHandler.format_error_for_user(error_result)
         )]
+
+
+def _format_validation_result(result: dict) -> str:
+    """格式化验证结果"""
+    if result["valid"]:
+        file_info = result["file_info"]
+        output = f"""✅ 文档验证通过
+
+📄 文件信息:
+  - 文件名: {file_info['name']}
+  - 文件大小: {file_info['size_formatted']}
+  - 文件类型: {file_info['extension']}
+  - 修改时间: {file_info['modified_time']}
+"""
+        if result.get("warnings"):
+            output += f"\n⚠️ 警告:\n"
+            for warning in result["warnings"]:
+                output += f"  - {warning}\n"
+    else:
+        output = f"""❌ 文档验证失败
+
+错误:
+"""
+        for error in result["errors"]:
+            output += f"  - {error}\n"
+
+    return output
+
+
+def _format_parse_result(result: dict) -> str:
+    """格式化解析结果"""
+    if result.get("status") == "error":
+        return ErrorHandler.format_error_for_user(result)
+
+    file_info = result.get("file_info", {})
+    content = result.get("content", {})
+    summary = result.get("summary", {})
+
+    output = f"""✅ 文档解析成功
+
+📄 文件: {file_info.get('name', 'Unknown')}
+📊 解析器: {file_info.get('parser', 'Unknown')}
+"""
+
+    # 根据解析器类型显示不同的摘要
+    if 'Word' in file_info.get('parser', ''):
+        output += f"""
+📝 内容统计:
+  - 章节数: {summary.get('total_sections', 0)}
+  - 段落数: {summary.get('total_paragraphs', 0)}
+  - 字符数: {summary.get('total_chars', 0)}
+  - 表格数: {summary.get('total_tables', 0)}
+"""
+        if summary.get('section_titles'):
+            output += f"\n📑 章节列表:\n"
+            for title in summary['section_titles'][:10]:
+                output += f"  - {title}\n"
+
+    elif 'Excel' in file_info.get('parser', ''):
+        output += f"""
+📊 内容统计:
+  - 工作表数: {summary.get('total_sheets', 0)}
+  - 总行数: {summary.get('total_rows', 0)}
+"""
+        if summary.get('sheet_names'):
+            output += f"\n📋 工作表列表:\n"
+            for name in summary['sheet_names']:
+                output += f"  - {name}\n"
+
+    elif 'PowerPoint' in file_info.get('parser', ''):
+        output += f"""
+🎞️ 内容统计:
+  - 幻灯片数: {summary.get('total_slides', 0)}
+  - 有标题: {len(summary.get('slide_titles', []))} 张
+  - 有备注: {summary.get('slides_with_notes', 0)} 张
+"""
+        if summary.get('slide_titles'):
+            output += f"\n📑 幻灯片标题:\n"
+            for title in summary['slide_titles'][:10]:
+                output += f"  - {title}\n"
+
+    elif 'PDF' in file_info.get('parser', ''):
+        output += f"""
+📄 内容统计:
+  - 总页数: {summary.get('total_pages', 0)}
+  - 已提取: {summary.get('pages_extracted', 0)} 页
+  - 总字符数: {summary.get('total_text_length', 0)}
+"""
+
+    output += f"\n💡 提示: 使用 extract_document_summary 工具可获取更详细的智能摘要"
+
+    return output
+
+
+def _format_summary_result(summary: dict) -> str:
+    """格式化摘要结果"""
+    if summary.get("status") == "error":
+        return f"❌ 摘要提取失败: {summary.get('message', 'Unknown error')}"
+
+    file_info = summary.get("file_info", {})
+    output = f"""✅ 智能摘要提取完成
+
+📄 文件: {file_info.get('name', 'Unknown')}
+
+"""
+
+    # 主要要点
+    if summary.get("main_points"):
+        output += "🎯 主要要点:\n"
+        for point in summary["main_points"][:10]:
+            output += f"  • {point}\n"
+        output += "\n"
+
+    # 关键数据
+    if summary.get("key_data"):
+        output += "📊 关键数据:\n"
+        for key, value in summary["key_data"].items():
+            output += f"  - {key}: {value}\n"
+        output += "\n"
+
+    # 关键词搜索结果
+    if summary.get("keywords_found"):
+        output += f"🔍 找到关键词: {', '.join(summary['keywords_found'])}\n\n"
+
+        if summary.get("sections_summary"):
+            output += "📝 相关内容:\n"
+            for keyword, items in list(summary["sections_summary"].items())[:3]:
+                output += f"\n  关键词: {keyword}\n"
+                for item in items[:2]:
+                    if isinstance(item, dict):
+                        if 'text' in item:
+                            output += f"    - {item.get('section', '未知章节')}: {item['text'][:100]}...\n"
+                        elif 'value' in item:
+                            output += f"    - {item.get('sheet', '未知工作表')} ({item.get('row', 0)}, {item.get('col', 0)}): {item['value']}\n"
+
+    return output
+
+
+def _format_batch_result(results: list) -> str:
+    """格式化批量处理结果"""
+    total = len(results)
+    success = sum(1 for r in results if r.get('status') == 'success')
+    failed = total - success
+
+    output = f"""✅ 批量处理完成
+
+📊 处理统计:
+  - 总文档数: {total}
+  - 成功: {success}
+  - 失败: {failed}
+
+"""
+
+    # 显示成功的文档
+    if success > 0:
+        output += "✅ 成功处理的文档:\n"
+        for result in results:
+            if result.get('status') == 'success':
+                file_info = result.get('file_info', {})
+                output += f"  • {file_info.get('name', 'Unknown')}\n"
+
+    # 显示失败的文档
+    if failed > 0:
+        output += "\n❌ 失败的文档:\n"
+        for result in results:
+            if result.get('status') != 'success':
+                file_info = result.get('file_info', {})
+                error_msg = result.get('error_message', 'Unknown error')
+                output += f"  • {file_info.get('name', 'Unknown')}: {error_msg}\n"
+
+    return output
+
+
+def _format_metadata(file_info: dict) -> str:
+    """格式化元数据"""
+    return f"""📄 文档元数据
+
+文件名: {file_info.get('name', 'Unknown')}
+文件大小: {file_info.get('size_formatted', 'Unknown')}
+文件类型: {file_info.get('extension', 'Unknown')}
+创建时间: {file_info.get('created_time', 'Unknown')}
+修改时间: {file_info.get('modified_time', 'Unknown')}
+文件路径: {file_info.get('path', 'Unknown')}
+"""
+
 
 async def main():
     """启动 MCP 服务器"""
-    logger.info("启动建筑施工文档处理 MCP 服务器...")
+    logger.info("=" * 60)
+    logger.info("建筑施工文档处理 MCP 服务器 v1.1.0")
+    logger.info("=" * 60)
+    logger.info("支持的文档格式: Word (.docx), Excel (.xlsx), PowerPoint (.pptx), PDF (.pdf)")
+    logger.info("提供工具: 文档验证、解析、摘要提取、批量处理")
+    logger.info("=" * 60)
+
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
             read_stream,
@@ -347,6 +506,13 @@ async def main():
             server.create_initialization_options()
         )
 
+
 if __name__ == "__main__":
     import asyncio
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.info("服务器已停止")
+    except Exception as e:
+        logger.error(f"服务器错误: {e}", exc_info=True)
+        sys.exit(1)

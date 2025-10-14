@@ -22,27 +22,48 @@
 
 ## 📦 安装
 
-### 方式 1: 从 GitHub Marketplace 安装
+### 方式 1: 从 GitHub Marketplace 安装(推荐)
 
 ```bash
-# 添加 marketplace
+# 1. 添加 marketplace
 claude marketplace add z1w2r3/construction-marketplace
 
-# 安装插件
+# 2. 安装插件
 claude marketplace install construction-doc-assistant
+
+# 3. 安装 Python 依赖(必需!)
+cd ~/.claude/plugins/construction-doc-assistant/mcp-servers/document-processor
+./install.sh
 ```
+
+**⚠️ 重要**: 必须运行安装脚本安装 Python 依赖,否则文档解析功能无法工作!
 
 ### 方式 2: 本地开发安装
 
 ```bash
-# 克隆仓库
+# 1. 克隆仓库
 git clone https://github.com/z1w2r3/construction-marketplace.git
 cd construction-marketplace/plugins/construction-doc-assistant
 
-# 安装 Python 依赖
+# 2. 安装 Python 依赖(必需!)
 cd mcp-servers/document-processor
-pip install -r requirements.txt
+./install.sh
+
+# 或手动安装
+pip3 install -r requirements.txt
 ```
+
+### 安装验证
+
+```bash
+# 验证所有依赖已正确安装
+python3 -c "
+import mcp, docx, openpyxl, PyPDF2, pptx
+print('✅ 所有依赖已正确安装')
+"
+```
+
+📖 详细安装说明请查看 [INSTALL.md](INSTALL.md)
 
 ## 🚀 快速开始
 
