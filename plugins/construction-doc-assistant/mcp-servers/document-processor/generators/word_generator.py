@@ -77,9 +77,9 @@ class WordGenerator(BaseGenerator):
             with open(markdown_file, 'r', encoding='utf-8') as f:
                 markdown_text = f.read()
 
-            # 3. 解析Markdown
-            self.logger.info("解析Markdown内容...")
-            sections = self.markdown_parser.parse(markdown_text)
+            # 3. 解析Markdown(启用技术性元数据过滤)
+            self.logger.info("解析Markdown内容(过滤技术性元数据)...")
+            sections = self.markdown_parser.parse(markdown_text, filter_technical_metadata=True)
             self.logger.info(f"解析完成,共 {len(sections)} 个段落")
 
             # 4. 创建Word文档

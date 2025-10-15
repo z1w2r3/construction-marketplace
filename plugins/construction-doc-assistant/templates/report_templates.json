@@ -1,0 +1,329 @@
+{
+  "templates": {
+    "trial_project": {
+      "name": "试点项目报告",
+      "name_en": "Trial Project Report",
+      "description": "适用于智能建造试点、示范项目等申报和总结材料",
+      "keywords": ["试点", "示范", "申报", "智能建造"],
+      "priority": 90,
+      "structure": [
+        {
+          "title": "项目背景与意义",
+          "level": 1,
+          "required": true,
+          "content_hints": ["项目基本信息", "试点背景", "申报意义", "政策支持"]
+        },
+        {
+          "title": "试点目标与任务",
+          "level": 1,
+          "required": true,
+          "content_hints": ["总体目标", "具体任务", "技术指标", "预期成果"]
+        },
+        {
+          "title": "组织保障体系",
+          "level": 1,
+          "required": true,
+          "content_hints": ["组织架构", "制度建设", "人员配置", "资源投入"]
+        },
+        {
+          "title": "技术应用与实施",
+          "level": 1,
+          "required": true,
+          "content_hints": ["技术方案", "实施过程", "应用范围", "关键技术"]
+        },
+        {
+          "title": "应用成效与数据支撑",
+          "level": 1,
+          "required": true,
+          "content_hints": ["效率提升数据", "成本节约数据", "质量改善数据", "对比分析"]
+        },
+        {
+          "title": "创新亮点与特色",
+          "level": 1,
+          "required": true,
+          "content_hints": ["技术创新点", "管理创新点", "与传统方式对比", "独特优势"]
+        },
+        {
+          "title": "经验总结与推广价值",
+          "level": 1,
+          "required": true,
+          "content_hints": ["成功经验", "遇到的问题", "解决方案", "推广建议"]
+        },
+        {
+          "title": "持续改进计划",
+          "level": 1,
+          "required": false,
+          "content_hints": ["下一步工作", "优化方向", "扩展应用计划"]
+        }
+      ],
+      "focus_data": ["效率数据", "成本数据", "质量数据", "创新点"],
+      "extract_depth": "detailed",
+      "formal_level": "high",
+      "include_cover": true,
+      "include_appendix": true
+    },
+
+    "technical": {
+      "name": "专项技术报告",
+      "name_en": "Technical Report",
+      "description": "适用于BIM应用、机器人应用、智能装备等专项技术总结",
+      "keywords": ["BIM", "技术", "机器人", "智能装备", "应用"],
+      "priority": 85,
+      "structure": [
+        {
+          "title": "技术背景与目标",
+          "level": 1,
+          "required": true,
+          "content_hints": ["技术背景", "应用目标", "技术难点", "解决思路"]
+        },
+        {
+          "title": "技术方案设计",
+          "level": 1,
+          "required": true,
+          "content_hints": ["总体方案", "技术路线", "关键技术", "实施步骤"]
+        },
+        {
+          "title": "技术实施过程",
+          "level": 1,
+          "required": true,
+          "content_hints": ["实施阶段", "关键节点", "技术参数", "实施记录"]
+        },
+        {
+          "title": "技术应用成效",
+          "level": 1,
+          "required": true,
+          "content_hints": ["效率成效", "质量成效", "成本成效", "数据对比"]
+        },
+        {
+          "title": "关键技术参数与数据",
+          "level": 1,
+          "required": true,
+          "content_hints": ["技术参数", "性能指标", "测试数据", "统计分析"]
+        },
+        {
+          "title": "技术创新点",
+          "level": 1,
+          "required": true,
+          "content_hints": ["创新技术", "突破难点", "技术优势", "专利成果"]
+        },
+        {
+          "title": "问题与改进",
+          "level": 1,
+          "required": true,
+          "content_hints": ["遇到的问题", "原因分析", "改进措施", "优化方向"]
+        },
+        {
+          "title": "技术推广价值",
+          "level": 1,
+          "required": true,
+          "content_hints": ["推广前景", "适用范围", "推广建议", "经济社会效益"]
+        }
+      ],
+      "focus_data": ["技术参数", "性能指标", "应用数据", "对比数据"],
+      "extract_depth": "detailed",
+      "formal_level": "high",
+      "include_cover": true,
+      "include_appendix": true
+    },
+
+    "acceptance": {
+      "name": "验收汇报材料",
+      "name_en": "Acceptance Report",
+      "description": "适用于工程验收、检查、评审等正式汇报场合",
+      "keywords": ["验收", "检查", "评审", "竣工", "质量"],
+      "priority": 88,
+      "structure": [
+        {
+          "title": "工程概况",
+          "level": 1,
+          "required": true,
+          "content_hints": ["项目基本信息", "建设规模", "参建单位", "合同信息"]
+        },
+        {
+          "title": "施工组织管理",
+          "level": 1,
+          "required": true,
+          "content_hints": ["组织架构", "管理制度", "施工组织", "进度管理"]
+        },
+        {
+          "title": "工程质量情况",
+          "level": 1,
+          "required": true,
+          "content_hints": ["质量保证体系", "分部分项验收", "检测数据", "质量评定"]
+        },
+        {
+          "title": "安全文明施工",
+          "level": 1,
+          "required": true,
+          "content_hints": ["安全管理", "安全检查", "文明施工", "应急管理"]
+        },
+        {
+          "title": "技术创新与亮点",
+          "level": 1,
+          "required": false,
+          "content_hints": ["新技术应用", "工艺创新", "管理创新", "获奖情况"]
+        },
+        {
+          "title": "自查自评",
+          "level": 1,
+          "required": true,
+          "content_hints": ["自查情况", "存在问题", "整改措施", "自评结论"]
+        },
+        {
+          "title": "验收准备情况",
+          "level": 1,
+          "required": true,
+          "content_hints": ["资料准备", "实体质量", "功能检测", "验收条件"]
+        }
+      ],
+      "focus_data": ["质量数据", "检测数据", "验收标准", "整改情况"],
+      "extract_depth": "full",
+      "formal_level": "very_high",
+      "include_cover": true,
+      "include_appendix": true
+    },
+
+    "progress": {
+      "name": "进度分析报告",
+      "name_en": "Progress Analysis Report",
+      "description": "适用于项目进度分析、进度偏差分析、进度调整方案",
+      "keywords": ["进度", "计划", "工期", "节点", "进展"],
+      "priority": 75,
+      "structure": [
+        {
+          "title": "项目基本情况",
+          "level": 1,
+          "required": true,
+          "content_hints": ["项目概况", "合同工期", "总体进度目标"]
+        },
+        {
+          "title": "计划进度与实际进度对比",
+          "level": 1,
+          "required": true,
+          "content_hints": ["总进度计划", "实际完成情况", "进度对比", "完成百分比"]
+        },
+        {
+          "title": "关键节点完成情况",
+          "level": 1,
+          "required": true,
+          "content_hints": ["关键里程碑", "节点完成时间", "偏差分析"]
+        },
+        {
+          "title": "进度偏差分析",
+          "level": 1,
+          "required": true,
+          "content_hints": ["偏差情况", "偏差原因", "影响分析", "风险评估"]
+        },
+        {
+          "title": "影响因素分析",
+          "level": 1,
+          "required": true,
+          "content_hints": ["内部因素", "外部因素", "资源因素", "技术因素"]
+        },
+        {
+          "title": "进度调整措施",
+          "level": 1,
+          "required": true,
+          "content_hints": ["赶工措施", "资源调配", "工艺优化", "组织调整"]
+        },
+        {
+          "title": "后续进度安排",
+          "level": 1,
+          "required": true,
+          "content_hints": ["调整后计划", "保障措施", "预期目标"]
+        }
+      ],
+      "focus_data": ["进度百分比", "工期数据", "偏差天数", "预测完工时间"],
+      "extract_depth": "summary",
+      "formal_level": "medium",
+      "include_cover": true,
+      "include_appendix": false
+    },
+
+    "summary": {
+      "name": "项目总结报告",
+      "name_en": "Project Summary Report",
+      "description": "适用于综合性项目总结、年度总结、阶段总结",
+      "keywords": ["总结", "项目", "年度", "阶段", "综合"],
+      "priority": 70,
+      "structure": [
+        {
+          "title": "项目概况",
+          "level": 1,
+          "required": true,
+          "content_hints": ["基本信息", "项目规模", "参建单位", "合同概况"]
+        },
+        {
+          "title": "工程实施情况",
+          "level": 1,
+          "required": true,
+          "content_hints": ["施工进度", "质量管理", "安全管理", "技术管理"]
+        },
+        {
+          "title": "主要成果",
+          "level": 1,
+          "required": true,
+          "content_hints": ["工程成果", "管理成果", "技术成果", "荣誉奖项"]
+        },
+        {
+          "title": "技术创新",
+          "level": 1,
+          "required": false,
+          "content_hints": ["新技术应用", "工艺创新", "管理创新", "专利成果"]
+        },
+        {
+          "title": "经济效益",
+          "level": 1,
+          "required": false,
+          "content_hints": ["成本控制", "效益分析", "资源节约", "经济指标"]
+        },
+        {
+          "title": "经验总结",
+          "level": 1,
+          "required": true,
+          "content_hints": ["成功经验", "存在不足", "改进建议", "经验提炼"]
+        },
+        {
+          "title": "结论与建议",
+          "level": 1,
+          "required": true,
+          "content_hints": ["总体评价", "下一步工作", "建议事项"]
+        }
+      ],
+      "focus_data": ["进度数据", "质量数据", "成本数据", "效益数据"],
+      "extract_depth": "summary",
+      "formal_level": "medium",
+      "include_cover": true,
+      "include_appendix": false
+    }
+  },
+
+  "matching_rules": {
+    "keyword_weight": 0.4,
+    "document_type_weight": 0.3,
+    "structure_weight": 0.3,
+    "min_confidence": 0.6
+  },
+
+  "cover_template": {
+    "include_project_logo": false,
+    "include_company_info": true,
+    "include_approval_table": true,
+    "approval_roles": ["编制", "审核", "批准"]
+  },
+
+  "citation_format": {
+    "style": "professional",
+    "include_path": false,
+    "include_metadata": false,
+    "format": "根据《{document_name}》，{content}..."
+  },
+
+  "filtering_rules": {
+    "remove_technical_metadata": true,
+    "remove_statistics": true,
+    "remove_file_paths": true,
+    "max_emojis": 2,
+    "allowed_emojis": ["✓", "×"]
+  }
+}

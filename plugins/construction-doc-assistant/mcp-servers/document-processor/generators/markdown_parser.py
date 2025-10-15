@@ -34,10 +34,68 @@ class MarkdownParser:
     ITALIC_PATTERN = r'\*(.+?)\*'  # 斜体
     CODE_INLINE_PATTERN = r'`(.+?)`'  # 行内代码
 
+    # 技术性元数据标记模式(需要过滤的内容)
+    TECHNICAL_METADATA_PATTERNS = [
+        r'^\*\*统计\*\*[:：].*?成功\s*\d+.*?失败\s*\d+',  # "**统计**: 成功5个 | 失败0个"
+        r'^文档读取情况[:：].*?成功.*?失败',  # "文档读取情况: 成功X个 | 失败Y个"
+        r'^\*\*来源\*\*[:：].*?claude/CLAUDE-construction\.md',  # "**来源**: 《claude/CLAUDE-construction.md》"
+        r'^\*\*来源\*\*[:：].*?\(.*?个章节.*?\)',  # "**来源**: 《XXX》(41个章节,48段落)"
+        r'^\*\*数据来源\*\*[:：]',  # "**数据来源**:"
+        r'^##\s*[📊📋🔍]*\s*文档读取情况$',  # "## 📊 文档读取情况"
+        r'^##\s*数据来源$',  # "## 数据来源"
+        r'^##\s*[📋]*\s*报告质量说明$',  # "## 📋 报告质量说明"
+        r'^##\s*附录[:：]\s*参考文档列表$',  # "## 附录: 参考文档列表"（如果包含技术信息）
+        r'^\*\*数据准确性\*\*[:：].*本报告所有数据均来自原始文档',  # 技术性说明
+        r'^\*\*信息完整性\*\*[:：]',  # 技术性说明
+        r'^\*\*使用建议\*\*[:：]',  # 技术性说明（位于报告质量说明中）
+        r'^\*\*生成工具\*\*[:：]',  # "**生成工具**: 建筑施工文档助手"
+        r'^路径[:：]\s*/Volumes/',  # 内部文件路径
+        r'提取内容[:：].*?段落.*?表格',  # "提取内容: 27段落,3个表格"
+    ]
+
+    # 需要完整删除的章节标题（包括其下所有内容）
+    TECHNICAL_SECTIONS_TO_REMOVE = [
+        r'^##\s*[📊📋🔍]*\s*文档读取情况\s*$',
+        r'^##\s*[📋]*\s*报告质量说明\s*$',
+        r'^##\s*数据来源\s*$',
+    ]
+
     def __init__(self):
         self.logger = logger
 
-    def parse(self, markdown_text: str) -> List[Dict[str, Any]]:
+    def is_technical_metadata(self, line: str) -> bool:
+        """
+        判断一行文本是否为技术性元数据
+
+        Args:
+            line: 文本行
+
+        Returns:
+            True表示是技术性元数据,应该被过滤
+        """
+        line_stripped = line.strip()
+        for pattern in self.TECHNICAL_METADATA_PATTERNS:
+            if re.match(pattern, line_stripped):
+                return True
+        return False
+
+    def is_technical_section_start(self, line: str) -> bool:
+        """
+        判断一行是否为需要删除的技术章节开始
+
+        Args:
+            line: 文本行
+
+        Returns:
+            True表示是技术章节标题,该章节应被完整删除
+        """
+        line_stripped = line.strip()
+        for pattern in self.TECHNICAL_SECTIONS_TO_REMOVE:
+            if re.match(pattern, line_stripped):
+                return True
+        return False
+
+    def parse(self, markdown_text: str, filter_technical_metadata: bool = True) -> List[Dict[str, Any]]:
         """
         解析Markdown文本为结构化段落列表
 
@@ -60,6 +118,7 @@ class MarkdownParser:
         sections = []
         lines = markdown_text.split('\n')
         i = 0
+        skip_until_next_section = False  # 用于跳过整个技术章节
 
         while i < len(lines):
             line = lines[i]
@@ -69,11 +128,36 @@ class MarkdownParser:
                 i += 1
                 continue
 
+            # 检查是否遇到新的章节标题（##开头）
+            if re.match(r'^##\s+', line):
+                # 检查是否为需要删除的技术章节
+                if filter_technical_metadata and self.is_technical_section_start(line):
+                    self.logger.info(f"跳过技术章节: {line[:50]}...")
+                    skip_until_next_section = True
+                    i += 1
+                    continue
+                else:
+                    # 遇到新的正常章节，停止跳过
+                    skip_until_next_section = False
+
+            # 如果在技术章节内，跳过所有内容直到下一个章节
+            if skip_until_next_section:
+                i += 1
+                continue
+
+            # 过滤技术性元数据行
+            if filter_technical_metadata and self.is_technical_metadata(line):
+                self.logger.debug(f"过滤技术性元数据: {line[:50]}...")
+                i += 1
+                continue
+
             # 1. 标题
             heading_match = re.match(self.HEADING_PATTERN, line)
             if heading_match:
                 level = len(heading_match.group(1))
                 text = heading_match.group(2).strip()
+                # 清理行内格式标记
+                text = self.strip_inline_styles(text)
                 sections.append({
                     "type": "heading",
                     "level": level,
@@ -182,6 +266,8 @@ class MarkdownParser:
 
             if para_lines:
                 para_text = ' '.join(para_lines)
+                # 清理行内格式标记
+                para_text = self.strip_inline_styles(para_text)
                 sections.append({
                     "type": "paragraph",
                     "text": para_text
@@ -210,7 +296,7 @@ class MarkdownParser:
         if not re.match(self.TABLE_ROW_PATTERN, header_line):
             return None
 
-        headers = [cell.strip() for cell in header_line.split('|')[1:-1]]
+        headers = [self.strip_inline_styles(cell.strip()) for cell in header_line.split('|')[1:-1]]
         i += 1
 
         # 第二行应该是分隔符
@@ -227,7 +313,7 @@ class MarkdownParser:
             if not re.match(self.TABLE_ROW_PATTERN, row_line):
                 break
 
-            cells = [cell.strip() for cell in row_line.split('|')[1:-1]]
+            cells = [self.strip_inline_styles(cell.strip()) for cell in row_line.split('|')[1:-1]]
             rows.append(cells)
             i += 1
 
@@ -268,6 +354,8 @@ class MarkdownParser:
                 break
 
             item_text = list_match.group(3).strip()
+            # 清理行内格式标记
+            item_text = self.strip_inline_styles(item_text)
             items.append(item_text)
             i += 1
 
