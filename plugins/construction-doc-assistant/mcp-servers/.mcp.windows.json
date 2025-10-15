@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "construction-doc-processor": {
-      "command": "${CLAUDE_PLUGIN_ROOT}/mcp-servers/document-processor/venv/bin/python",
+      "command": "${CLAUDE_PLUGIN_ROOT}/mcp-servers/document-processor/venv/Scripts/python.exe",
       "args": [
         "${CLAUDE_PLUGIN_ROOT}/mcp-servers/document-processor/server.py"
       ],
@@ -11,7 +11,7 @@
         "MAX_FILE_SIZE": "104857600",
         "ENABLE_CACHE": "true"
       },
-      "description": "建筑文档处理工具 - 增强版 v1.1.0 (跨平台支持)",
+      "description": "建筑文档处理工具 - 增强版 v1.1.0 (Windows)",
       "capabilities": [
         "文档验证 (validate_document)",
         "Word 文档解析 (parse_word_document)",
@@ -23,6 +23,5 @@
         "文档元数据获取 (get_document_metadata)"
       ]
     }
-  },
-  "_comment": "Windows 用户: 请手动修改 command 为 '${CLAUDE_PLUGIN_ROOT}/mcp-servers/document-processor/venv/Scripts/python.exe'"
+  }
 }
