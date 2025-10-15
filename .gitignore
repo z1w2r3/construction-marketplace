@@ -1,0 +1,28 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.bak
+*~

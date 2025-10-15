@@ -186,6 +186,9 @@ class MarkdownParser:
                     "type": "paragraph",
                     "text": para_text
                 })
+            else:
+                # 如果没有收集到段落内容,必须递增i避免无限循环
+                i += 1
 
         return sections
 
