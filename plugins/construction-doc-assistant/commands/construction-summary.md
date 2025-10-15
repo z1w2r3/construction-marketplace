@@ -414,7 +414,7 @@ mcp__construction_doc_processor__get_document_metadata
 **生成工具**: 建筑施工文档助手 v1.1.0
 ```
 
-### 7. 保存报告
+### 7. 保存Markdown报告
 
 使用 Write 工具保存报告到:
 
@@ -427,7 +427,65 @@ mcp__construction_doc_processor__get_document_metadata
 - 阶段总结: `生成文件/项目总结/项目总结-主体结构阶段-20251014-143022.md`
 - 时期总结: `生成文件/项目总结/项目总结-2024年9月-20251014-143022.md`
 
-### 8. 输出完成信息
+### 8. 生成Word文档 ⭐ (新增)
+
+#### 8.1 调用Word生成工具
+
+使用 MCP 工具生成专业排版的Word文档:
+
+```
+mcp__construction_doc_processor__generate_word_report:
+  markdown_file: [步骤7保存的Markdown文件路径]
+  output_file: [同目录下,将.md替换为.docx]
+  template_type: "project_summary"
+  project_info:
+    project_name: [从配置文件读取的项目名称]
+    report_type: "项目总结报告"
+    generate_date: [当前日期 YYYY-MM-DD格式]
+```
+
+**参数说明**:
+- `markdown_file`: 步骤7生成的Markdown文件的绝对路径
+- `output_file`: Word文档输出路径(与Markdown同目录,扩展名改为.docx)
+- `template_type`: 使用"project_summary"模板(项目总结报告样式)
+- `project_info`: 项目信息,用于生成页眉页脚
+
+**示例**:
+```
+mcp__construction_doc_processor__generate_word_report:
+  markdown_file: "生成文件/项目总结/项目总结-整体-20251015-143022.md"
+  output_file: "生成文件/项目总结/项目总结-整体-20251015-143022.docx"
+  template_type: "project_summary"
+  project_info:
+    project_name: "XX建设项目"
+    report_type: "项目总结报告"
+    generate_date: "2025-10-15"
+```
+
+#### 8.2 处理生成结果
+
+**如果Word生成成功**:
+- 工具会返回成功信息,包含文件路径和大小
+- 继续执行步骤9
+
+**如果Word生成失败**:
+- 显示错误信息
+- Markdown文件仍然可用
+- 提示: "Word生成失败,Markdown报告已保存,可手动转换或稍后重试"
+- 继续执行步骤9(不中断流程)
+
+#### 8.3 Word文档特性
+
+生成的Word文档包含:
+- ✅ 专业排版(符合建筑行业文档规范)
+- ✅ 页眉:项目名称 | 报告类型
+- ✅ 页脚:自动页码
+- ✅ 标题层级样式(一级标题22pt黑体,二级标题16pt黑体等)
+- ✅ 表格样式(三线表,表头加粗蓝色背景)
+- ✅ 正文样式(宋体12pt,1.5倍行距)
+- 🔲 图片占位符(Phase 1暂不支持图片,显示"[图片: 说明]")
+
+### 9. 输出完成信息(更新版)
 
 ```
 ✅ 项目总结生成完成
@@ -439,8 +497,10 @@ mcp__construction_doc_processor__get_document_metadata
   - 读取失败: [失败数] 个
   - 总结长度: [字符数] 字符
 
-📄 报告位置:
-  生成文件/项目总结/项目总结-[范围]-20251014-143022.md
+📄 生成文件:
+  - Markdown报告: 生成文件/项目总结/项目总结-[范围]-20251015-143022.md
+  - Word文档: 生成文件/项目总结/项目总结-[范围]-20251015-143022.docx ⭐
+  - Word文件大小: [文件大小] MB
 
 📋 内容概要:
   - 项目概况: ✅
@@ -460,10 +520,11 @@ mcp__construction_doc_processor__get_document_metadata
      - [部分文档2]
 
   ✅ 建议操作:
-     1. 打开生成的报告进行人工审核
+     1. 打开Word文档进行人工审核(推荐直接编辑Word版本)
      2. 对比原始文档验证关键数据
      3. 补充无法自动提取的信息
-     4. 调整格式使其符合正式报告要求
+     4. 如需调整样式,可在Word中直接修改
+     5. Markdown文件作为源文件保留,便于后续重新生成
 ```
 
 ---

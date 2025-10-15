@@ -227,6 +227,51 @@ async def list_tools() -> list[Tool]:
                 },
                 "required": ["file_path"]
             }
+        ),
+
+        # 9. Word报告生成(新增)
+        Tool(
+            name="generate_word_report",
+            description="将Markdown报告转换为格式化的Word文档(当前版本:纯文字,不含图片)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "markdown_file": {
+                        "type": "string",
+                        "description": "Markdown源文件的绝对路径"
+                    },
+                    "output_file": {
+                        "type": "string",
+                        "description": "Word输出文件的绝对路径"
+                    },
+                    "template_type": {
+                        "type": "string",
+                        "enum": ["project_summary", "inspection_report",
+                                "progress_analysis", "organize_plan"],
+                        "description": "报告模板类型:project_summary=项目总结,inspection_report=完整性检查,progress_analysis=进度分析,organize_plan=整理方案",
+                        "default": "project_summary"
+                    },
+                    "project_info": {
+                        "type": "object",
+                        "description": "项目信息(用于页眉页脚)",
+                        "properties": {
+                            "project_name": {
+                                "type": "string",
+                                "description": "项目名称"
+                            },
+                            "report_type": {
+                                "type": "string",
+                                "description": "报告类型描述"
+                            },
+                            "generate_date": {
+                                "type": "string",
+                                "description": "生成日期(格式:YYYY-MM-DD)"
+                            }
+                        }
+                    }
+                },
+                "required": ["markdown_file", "output_file"]
+            }
         )
     ]
 
@@ -293,6 +338,28 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
                     type="text",
                     text=f"❌ 错误: {', '.join(result['errors'])}"
                 )]
+
+        # 9. Word报告生成(新增)
+        elif name == "generate_word_report":
+            from generators import WordGenerator
+
+            # 获取模板类型
+            template_type = arguments.get("template_type", "project_summary")
+
+            # 创建生成器
+            generator = WordGenerator(template_type=template_type)
+
+            # 生成Word文档
+            result = generator.generate(
+                markdown_file=arguments["markdown_file"],
+                output_file=arguments["output_file"],
+                options={"project_info": arguments.get("project_info")}
+            )
+
+            return [TextContent(
+                type="text",
+                text=_format_generation_result(result)
+            )]
 
         else:
             raise ValueError(f"未知工具: {name}")
@@ -490,13 +557,68 @@ def _format_metadata(file_info: dict) -> str:
 """
 
 
+def _format_generation_result(result: dict) -> str:
+    """格式化Word生成结果"""
+    if result.get("status") == "error":
+        return f"""❌ Word文档生成失败
+
+错误: {result.get('error', 'Unknown error')}
+"""
+
+    output_file = result.get('output_file', 'Unknown')
+    sections_processed = result.get('sections_processed', 0)
+    file_size = result.get('file_size', 0)
+    warnings = result.get('warnings', [])
+    template_type = result.get('template_type', 'Unknown')
+
+    # 格式化文件大小
+    if file_size < 1024:
+        size_str = f"{file_size} B"
+    elif file_size < 1024 * 1024:
+        size_str = f"{file_size / 1024:.1f} KB"
+    else:
+        size_str = f"{file_size / (1024 * 1024):.1f} MB"
+
+    # 模板类型中文名称映射
+    template_names = {
+        "project_summary": "项目总结报告",
+        "inspection_report": "完整性检查报告",
+        "progress_analysis": "进度分析报告",
+        "organize_plan": "资料整理方案"
+    }
+    template_name = template_names.get(template_type, template_type)
+
+    output = f"""✅ Word文档生成成功
+
+📄 输出文件: {output_file}
+📊 文件大小: {size_str}
+📝 模板类型: {template_name}
+🔢 处理段落: {sections_processed} 个
+"""
+
+    if warnings:
+        output += f"\n⚠️ 警告信息 ({len(warnings)} 项):\n"
+        for i, warning in enumerate(warnings[:5], 1):  # 最多显示5条警告
+            output += f"  {i}. {warning}\n"
+        if len(warnings) > 5:
+            output += f"  ... 还有 {len(warnings) - 5} 条警告\n"
+
+    output += "\n💡 提示:\n"
+    output += "  - Word文档已自动排版,可直接打开编辑\n"
+    output += "  - 图片功能将在Phase 2实现,当前显示占位符\n"
+    output += "  - 如需调整样式,可在Word中手动修改\n"
+
+    return output
+
+
 async def main():
     """启动 MCP 服务器"""
     logger.info("=" * 60)
-    logger.info("建筑施工文档处理 MCP 服务器 v1.1.0")
+    logger.info("建筑施工文档处理 MCP 服务器 v1.2.0")
     logger.info("=" * 60)
     logger.info("支持的文档格式: Word (.docx), Excel (.xlsx), PowerPoint (.pptx), PDF (.pdf)")
-    logger.info("提供工具: 文档验证、解析、摘要提取、批量处理")
+    logger.info("提供工具: 文档验证、解析、摘要提取、批量处理、Word报告生成")
+    logger.info("新增功能: Markdown转Word文档生成(Phase 1)")
     logger.info("=" * 60)
 
     async with stdio_server() as (read_stream, write_stream):
