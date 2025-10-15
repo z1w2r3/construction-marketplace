@@ -17,17 +17,5 @@
   ],
   "license": "MIT",
   "commands": "./commands",
-  "mcp": "./mcp-servers/.mcp.json",
-  "install": {
-    "script": "./mcp-servers/document-processor/install.sh",
-    "description": "安装 MCP 文档处理服务器的 Python 依赖"
-  },
-  "requirements": {
-    "python": ">=3.8",
-    "system": {
-      "macos": ["libmagic"],
-      "linux": ["libmagic1"],
-      "windows": []
-    }
-  }
+  "mcpServers": "./mcp-servers/.mcp.json"
 }
