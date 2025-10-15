@@ -1,172 +1,191 @@
 # Windows 用户安装指南
 
-## 问题说明
+## 快速开始 (3 步完成)
 
-在 Windows 系统下,Python 虚拟环境的路径与 Unix/macOS 不同:
+### 1. 安装 Python 依赖
 
-- **Unix/macOS**: `venv/bin/python`
-- **Windows**: `venv\Scripts\python.exe`
-
-因此需要手动修改 MCP 配置文件。
-
----
-
-## 安装步骤
-
-### 1. 运行 Windows 安装脚本
-
-在插件安装目录下,找到并运行 `install.bat`:
+打开 **命令提示符** 或 **PowerShell**,执行:
 
 ```powershell
-# 方式 1: 使用命令提示符
 cd %USERPROFILE%\.claude\plugins\marketplaces\construction-marketplace\plugins\construction-doc-assistant\mcp-servers\document-processor
 install.bat
-
-# 方式 2: 使用 PowerShell
-cd $env:USERPROFILE\.claude\plugins\marketplaces\construction-marketplace\plugins\construction-doc-assistant\mcp-servers\document-processor
-.\install.bat
 ```
 
-或者直接双击文件管理器中的 `install.bat`。
+或直接在文件资源管理器中双击 `install.bat`。
 
-### 2. 修改 MCP 配置文件
-
-**方式 A: 使用预配置文件 (推荐)**
+### 2. 配置 MCP 服务器
 
 ```powershell
-# 进入 MCP 配置目录
 cd %USERPROFILE%\.claude\plugins\marketplaces\construction-marketplace\plugins\construction-doc-assistant\mcp-servers
-
-# 备份原配置
-copy .mcp.json .mcp.json.backup
-
-# 使用 Windows 配置
-copy .mcp.windows.json .mcp.json
+setup-windows.bat
 ```
 
-**方式 B: 手动修改**
+这个脚本会自动:
+- 备份原配置文件
+- 将 `run.sh` 替换为 `run.bat`
+- 显示修改结果
 
-编辑文件:
-```
-%USERPROFILE%\.claude\plugins\marketplaces\construction-marketplace\plugins\construction-doc-assistant\mcp-servers\.mcp.json
-```
-
-将第 4 行的 `command` 字段从:
-```json
-"command": "${CLAUDE_PLUGIN_ROOT}/mcp-servers/document-processor/venv/bin/python",
-```
-
-改为:
-```json
-"command": "${CLAUDE_PLUGIN_ROOT}/mcp-servers/document-processor/venv/Scripts/python.exe",
-```
-
-### 3. 验证配置
-
-检查修改后的配置文件:
-
-```powershell
-type %USERPROFILE%\.claude\plugins\marketplaces\construction-marketplace\plugins\construction-doc-assistant\mcp-servers\.mcp.json
-```
-
-应该看到:
-```json
-{
-  "mcpServers": {
-    "construction-doc-processor": {
-      "command": "${CLAUDE_PLUGIN_ROOT}/mcp-servers/document-processor/venv/Scripts/python.exe",
-      ...
-    }
-  }
-}
-```
-
-### 4. 重启 VSCode
+### 3. 重启 VSCode
 
 ```
 Ctrl + Shift + P → 输入 "Reload Window" → 回车
 ```
 
-### 5. 验证 MCP 服务器状态
+---
 
-重启后,在 Claude Code 中查看 MCP 状态:
+## 验证安装
 
+重启后,运行任意插件命令(如 `/construction-help`),应该看到 MCP 服务器正常工作。
+
+检查 MCP 状态:
 ```
 /debug mcp
 ```
 
-应该显示:
+应显示:
 ```
 ✓ construction-doc-processor: running
 ```
 
 ---
 
+## 原理说明
+
+### 为什么 Windows 需要额外配置?
+
+Windows 和 Unix 系统的脚本扩展名不同:
+- **Unix/macOS**: `.sh` 脚本
+- **Windows**: `.bat` 脚本
+
+默认配置使用 `run.sh`,在 Windows 下不可执行。
+
+### `setup-windows.bat` 做了什么?
+
+自动修改 `.mcp.json` 配置文件:
+
+**修改前:**
+```json
+{
+  "command": "${CLAUDE_PLUGIN_ROOT}/mcp-servers/document-processor/run.sh"
+}
+```
+
+**修改后:**
+```json
+{
+  "command": "${CLAUDE_PLUGIN_ROOT}/mcp-servers/document-processor/run.bat"
+}
+```
+
+---
+
 ## 常见问题
 
-### Q1: install.bat 提示 "未找到 Python"
+### Q1: `install.bat` 提示 "未找到 Python"
 
-**解决方案**:
-1. 安装 Python 3.8+: https://www.python.org/downloads/
-2. 安装时勾选 "Add Python to PATH"
-3. 重新打开命令提示符
+**解决方案:**
+1. 下载并安装 Python 3.8+: https://www.python.org/downloads/
+2. 安装时**务必勾选** "Add Python to PATH"
+3. 重新打开命令提示符,再次运行 `install.bat`
 
-### Q2: MCP 服务器状态显示 "failed"
+### Q2: `setup-windows.bat` 提示 "找不到 PowerShell"
 
-**排查步骤**:
+**解决方案:**
+
+使用手动方式修改配置:
+
+1. 用记事本打开文件:
+   ```
+   %USERPROFILE%\.claude\plugins\marketplaces\construction-marketplace\plugins\construction-doc-assistant\mcp-servers\.mcp.json
+   ```
+
+2. 找到第 4 行,将:
+   ```json
+   "command": "${CLAUDE_PLUGIN_ROOT}/mcp-servers/document-processor/run.sh",
+   ```
+
+   改为:
+   ```json
+   "command": "${CLAUDE_PLUGIN_ROOT}/mcp-servers/document-processor/run.bat",
+   ```
+
+3. 保存并重启 VSCode
+
+### Q3: MCP 服务器显示 "failed"
+
+**排查步骤:**
 
 1. **检查虚拟环境是否存在**:
    ```powershell
-   dir %USERPROFILE%\.claude\plugins\marketplaces\construction-marketplace\plugins\construction-doc-assistant\mcp-servers\document-processor\venv\Scripts\python.exe
+   dir %USERPROFILE%\.claude\plugins\marketplaces\construction-marketplace\plugins\construction-doc-assistant\mcp-servers\document-processor\venv
    ```
 
-   如果不存在,重新运行 `install.bat`
-
-2. **手动测试 Python 脚本**:
+   如果不存在,重新运行:
    ```powershell
    cd %USERPROFILE%\.claude\plugins\marketplaces\construction-marketplace\plugins\construction-doc-assistant\mcp-servers\document-processor
-   venv\Scripts\python.exe server.py
+   install.bat
    ```
 
-   查看错误信息
+2. **手动测试启动脚本**:
+   ```powershell
+   cd %USERPROFILE%\.claude\plugins\marketplaces\construction-marketplace\plugins\construction-doc-assistant\mcp-servers\document-processor
+   run.bat
+   ```
 
-3. **检查依赖是否安装完整**:
+   查看具体错误信息
+
+3. **检查依赖是否完整**:
    ```powershell
    venv\Scripts\pip.exe list
    ```
 
-   应该包含: mcp, python-docx, openpyxl, PyPDF2, pdfplumber 等
+   应包含: `mcp`, `python-docx`, `openpyxl`, `PyPDF2`, `pdfplumber` 等
 
-### Q3: 路径中包含空格或中文
+### Q4: 路径包含空格或中文
 
-如果路径包含空格或中文字符,需要确保:
+通常不会有问题,因为:
+- `run.bat` 脚本已正确处理路径引号
+- `${CLAUDE_PLUGIN_ROOT}` 由 Claude Code 自动展开
 
-1. Python 和 pip 正确安装
-2. 使用引号包裹路径:
-   ```json
-   "command": "\"${CLAUDE_PLUGIN_ROOT}/mcp-servers/document-processor/venv/Scripts/python.exe\""
-   ```
+如果仍有问题,建议:
+1. 避免在用户名或安装路径中使用空格和特殊字符
+2. 使用默认安装路径
 
 ---
 
 ## 卸载
 
-如需卸载,只需删除虚拟环境:
+如需卸载插件:
 
 ```powershell
+# 删除虚拟环境
 cd %USERPROFILE%\.claude\plugins\marketplaces\construction-marketplace\plugins\construction-doc-assistant\mcp-servers\document-processor
 rmdir /s /q venv
+
+# 在 Claude Code 中卸载插件
+/plugin uninstall construction-doc-assistant
 ```
+
+---
+
+## 文件说明
+
+| 文件 | 作用 |
+|------|------|
+| `install.bat` | 安装 Python 依赖到虚拟环境 |
+| `run.bat` | 启动 MCP 服务器(自动激活虚拟环境) |
+| `setup-windows.bat` | 自动配置 .mcp.json 文件 |
+| `.mcp.json` | MCP 服务器配置文件 |
 
 ---
 
 ## 技术支持
 
-如果遇到其他问题,请提供以下信息:
+遇到问题?请提供以下信息:
 
-1. Windows 版本: `winver`
-2. Python 版本: `python --version`
-3. 完整错误日志
-4. MCP 配置文件内容
+1. Windows 版本: 运行 `winver`
+2. Python 版本: 运行 `python --version`
+3. 错误截图或日志
+4. 配置文件内容
 
 提交 Issue: https://github.com/z1w2r3/construction-marketplace/issues
