@@ -68,6 +68,12 @@ async def list_tools() -> list[Tool]:
                         "type": "string",
                         "description": "Word 文档的绝对路径"
                     },
+                    "parse_mode": {
+                        "type": "string",
+                        "enum": ["summary", "full"],
+                        "description": "解析模式: summary=摘要模式(快速,控制token,提取前100段), full=完整模式(深度,不限制长度,提取所有内容)",
+                        "default": "summary"
+                    },
                     "extract_tables": {
                         "type": "boolean",
                         "description": "是否提取表格（默认 true）",
@@ -75,7 +81,7 @@ async def list_tools() -> list[Tool]:
                     },
                     "max_paragraphs": {
                         "type": "integer",
-                        "description": "最大段落数限制（可选）"
+                        "description": "最大段落数限制（可选，仅在 parse_mode=summary 时生效）"
                     },
                     "keywords": {
                         "type": "array",
@@ -98,13 +104,19 @@ async def list_tools() -> list[Tool]:
                         "type": "string",
                         "description": "Excel 文档的绝对路径"
                     },
+                    "parse_mode": {
+                        "type": "string",
+                        "enum": ["summary", "full"],
+                        "description": "解析模式: summary=摘要模式(每个工作表最多100行), full=完整模式(提取所有行)",
+                        "default": "summary"
+                    },
                     "sheet_name": {
                         "type": "string",
                         "description": "指定工作表名称（可选）"
                     },
                     "max_rows": {
                         "type": "integer",
-                        "description": "每个工作表最大行数（默认 100）",
+                        "description": "每个工作表最大行数（可选，仅在 parse_mode=summary 时生效，默认 100）",
                         "default": 100
                     }
                 },
@@ -123,9 +135,15 @@ async def list_tools() -> list[Tool]:
                         "type": "string",
                         "description": "PowerPoint 文档的绝对路径"
                     },
+                    "parse_mode": {
+                        "type": "string",
+                        "enum": ["summary", "full"],
+                        "description": "解析模式: summary=摘要模式(最多50张幻灯片), full=完整模式(提取所有幻灯片)",
+                        "default": "summary"
+                    },
                     "max_slides": {
                         "type": "integer",
-                        "description": "最大幻灯片数（默认 50）",
+                        "description": "最大幻灯片数（可选，仅在 parse_mode=summary 时生效，默认 50）",
                         "default": 50
                     },
                     "extract_notes": {
@@ -149,9 +167,15 @@ async def list_tools() -> list[Tool]:
                         "type": "string",
                         "description": "PDF 文档的绝对路径"
                     },
+                    "parse_mode": {
+                        "type": "string",
+                        "enum": ["summary", "full"],
+                        "description": "解析模式: summary=摘要模式(最多50页), full=完整模式(提取所有页)",
+                        "default": "summary"
+                    },
                     "max_pages": {
                         "type": "integer",
-                        "description": "最大页数（默认 50）",
+                        "description": "最大页数（可选，仅在 parse_mode=summary 时生效，默认 50）",
                         "default": 50
                     },
                     "extract_tables": {
@@ -294,7 +318,41 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
         # 2-5. 文档解析工具
         elif name in ["parse_word_document", "parse_excel_document",
                       "parse_powerpoint_document", "parse_pdf_document"]:
+            # 处理 parse_mode 参数
+            parse_mode = arguments.get("parse_mode", "summary")
+
+            # 根据 parse_mode 调整限制参数
+            if parse_mode == "full":
+                # 完整模式:移除所有限制
+                if "max_paragraphs" in arguments:
+                    arguments.pop("max_paragraphs")
+                if "max_rows" in arguments:
+                    arguments.pop("max_rows")
+                if "max_slides" in arguments:
+                    arguments.pop("max_slides")
+                if "max_pages" in arguments:
+                    arguments.pop("max_pages")
+
+                logger.info(f"使用完整模式解析文档: {arguments['file_path']}")
+            else:
+                # 摘要模式:使用默认限制(如果用户未指定)
+                if name == "parse_word_document" and "max_paragraphs" not in arguments:
+                    arguments["max_paragraphs"] = 100
+                elif name == "parse_excel_document" and "max_rows" not in arguments:
+                    arguments["max_rows"] = 100
+                elif name == "parse_powerpoint_document" and "max_slides" not in arguments:
+                    arguments["max_slides"] = 50
+                elif name == "parse_pdf_document" and "max_pages" not in arguments:
+                    arguments["max_pages"] = 50
+
+                logger.info(f"使用摘要模式解析文档: {arguments['file_path']}")
+
             result = parse_document(arguments["file_path"], arguments)
+
+            # 在结果中记录使用的模式
+            if result.get("status") == "success":
+                result["parse_mode"] = parse_mode
+
             return [TextContent(
                 type="text",
                 text=_format_parse_result(result)
@@ -408,11 +466,22 @@ def _format_parse_result(result: dict) -> str:
     file_info = result.get("file_info", {})
     content = result.get("content", {})
     summary = result.get("summary", {})
+    parse_mode = result.get("parse_mode", "summary")
 
-    output = f"""✅ 文档解析成功
+    # 根据模式显示不同的标题
+    if parse_mode == "full":
+        output = f"""✅ 文档解析成功 (完整模式)
 
 📄 文件: {file_info.get('name', 'Unknown')}
 📊 解析器: {file_info.get('parser', 'Unknown')}
+🔍 解析模式: 完整模式 - 已提取所有内容
+"""
+    else:
+        output = f"""✅ 文档解析成功 (摘要模式)
+
+📄 文件: {file_info.get('name', 'Unknown')}
+📊 解析器: {file_info.get('parser', 'Unknown')}
+🔍 解析模式: 摘要模式 - 已提取部分内容
 """
 
     # 根据解析器类型显示不同的摘要
@@ -460,7 +529,11 @@ def _format_parse_result(result: dict) -> str:
   - 总字符数: {summary.get('total_text_length', 0)}
 """
 
-    output += f"\n💡 提示: 使用 extract_document_summary 工具可获取更详细的智能摘要"
+    # 根据模式添加不同的提示
+    if parse_mode == "full":
+        output += f"\n⚠️ 提示: 完整模式返回了所有内容,可能消耗大量 token"
+    else:
+        output += f"\n💡 提示: 当前为摘要模式,使用 parse_mode='full' 可获取完整内容"
 
     return output
 
@@ -614,11 +687,11 @@ def _format_generation_result(result: dict) -> str:
 async def main():
     """启动 MCP 服务器"""
     logger.info("=" * 60)
-    logger.info("建筑施工文档处理 MCP 服务器 v1.2.0")
+    logger.info("建筑施工文档处理 MCP 服务器 v1.3.0")
     logger.info("=" * 60)
     logger.info("支持的文档格式: Word (.docx), Excel (.xlsx), PowerPoint (.pptx), PDF (.pdf)")
     logger.info("提供工具: 文档验证、解析、摘要提取、批量处理、Word报告生成")
-    logger.info("新增功能: Markdown转Word文档生成(Phase 1)")
+    logger.info("新增功能: 双模式解析 (summary/full) - 灵活控制解析深度")
     logger.info("=" * 60)
 
     async with stdio_server() as (read_stream, write_stream):

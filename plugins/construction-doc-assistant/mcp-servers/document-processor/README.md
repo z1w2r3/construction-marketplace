@@ -4,33 +4,86 @@
 
 ## 功能
 
+### 核心特性: 双模式解析
+
+所有文档解析工具都支持 **`parse_mode`** 参数,提供两种解析深度:
+
+- **`summary` 模式**(默认): 快速扫描,返回摘要内容,控制 token 消耗
+- **`full` 模式**: 深度解析,返回完整内容,不限制长度
+
 ### 1. parse_word_document
 解析 Word 文档,提取文本、表格和元数据。
 
 **参数**:
 - `file_path` (必需): Word 文档的绝对路径
+- `parse_mode` (可选): 解析模式,`summary`(默认) 或 `full`
 - `extract_tables` (可选): 是否提取表格,默认 true
+- `max_paragraphs` (可选): 最大段落数,仅在 `summary` 模式生效
 
 **返回**: 文档内容包括段落、表格信息
+
+**示例**:
+```python
+# 摘要模式 - 快速扫描(提取前100段)
+parse_word_document(file_path="report.docx", parse_mode="summary")
+
+# 完整模式 - 深度解析(提取所有段落)
+parse_word_document(file_path="report.docx", parse_mode="full")
+```
 
 ### 2. parse_excel_document
 解析 Excel 文档,提取工作表和单元格数据。
 
 **参数**:
 - `file_path` (必需): Excel 文档的绝对路径
+- `parse_mode` (可选): 解析模式,`summary`(默认) 或 `full`
 - `sheet_name` (可选): 工作表名称,默认读取所有工作表
+- `max_rows` (可选): 每个工作表最大行数,仅在 `summary` 模式生效,默认 100
 
-**返回**: 工作表列表和数据预览
+**返回**: 工作表列表和数据
 
-### 3. parse_pdf_document
+**示例**:
+```python
+# 摘要模式 - 每个工作表最多100行
+parse_excel_document(file_path="data.xlsx", parse_mode="summary")
+
+# 完整模式 - 提取所有行
+parse_excel_document(file_path="data.xlsx", parse_mode="full")
+```
+
+### 3. parse_powerpoint_document
+解析 PowerPoint 文档,提取幻灯片内容、标题和备注。
+
+**参数**:
+- `file_path` (必需): PowerPoint 文档的绝对路径
+- `parse_mode` (可选): 解析模式,`summary`(默认) 或 `full`
+- `max_slides` (可选): 最大幻灯片数,仅在 `summary` 模式生效,默认 50
+- `extract_notes` (可选): 是否提取备注,默认 true
+
+**返回**: 幻灯片内容和备注
+
+### 4. parse_pdf_document
 解析 PDF 文档,提取文本和元数据。
 
 **参数**:
 - `file_path` (必需): PDF 文档的绝对路径
+- `parse_mode` (可选): 解析模式,`summary`(默认) 或 `full`
+- `max_pages` (可选): 最大页数,仅在 `summary` 模式生效,默认 50
+- `extract_tables` (可选): 是否提取表格,默认 false
 
-**返回**: 页面文本预览
+**返回**: 页面文本
 
-### 4. get_document_metadata
+### 5. extract_document_summary
+智能提取文档摘要,支持关键词过滤。
+
+**参数**:
+- `file_path` (必需): 文档的绝对路径
+- `focus_keywords` (可选): 关注的关键词列表
+- `max_length` (可选): 摘要最大字符数,默认 2000
+
+**返回**: 智能摘要和关键信息
+
+### 6. get_document_metadata
 获取文档元数据。
 
 **参数**:
@@ -120,9 +173,47 @@ INFO:mcp.server.stdio:Server running
 
 **重启后生效**: 修改 MCP 配置后需要重启 Claude Code/VSCode。
 
+## 最佳实践
+
+### 两阶段文档读取策略
+
+推荐使用以下策略来平衡性能和完整性:
+
+**阶段 1: 快速扫描 (使用 `summary` 模式)**
+```python
+# 批量扫描文档,识别关键文档
+parse_word_document(file_path="方案1.docx", parse_mode="summary")
+parse_word_document(file_path="方案2.docx", parse_mode="summary")
+parse_word_document(file_path="方案3.docx", parse_mode="summary")
+
+# 根据摘要判断哪些文档需要深度分析
+```
+
+**阶段 2: 深度解析 (使用 `full` 模式)**
+```python
+# 只对关键文档使用 full 模式
+parse_word_document(file_path="重要方案.docx", parse_mode="full")
+```
+
+### 何时使用哪种模式
+
+| 场景 | 推荐模式 | 原因 |
+|------|---------|------|
+| 批量文档索引 | `summary` | 快速扫描,节省 token |
+| 文档搜索定位 | `summary` | 找到相关文档即可 |
+| 生成详细报告 | `full` | 需要完整信息 |
+| 提取表格数据 | `full` | 确保数据完整 |
+| 项目总结分析 | 先 `summary` 后 `full` | 两阶段策略 |
+
+### Token 消耗估算
+
+- **`summary` 模式**: 每个文档约 1000-5000 tokens
+- **`full` 模式**: 每个文档约 5000-50000 tokens (取决于文档大小)
+
 ## 开发注意事项
 
 1. **日志输出**: 只能写到 stderr,不能写到 stdout
 2. **错误处理**: 捕获所有异常,返回清晰的错误信息
 3. **性能**: 大文件只提取关键信息,避免超时
 4. **安全**: 验证文件路径,防止访问敏感目录
+5. **模式选择**: 优先使用 `summary` 模式,仅在必要时使用 `full` 模式
