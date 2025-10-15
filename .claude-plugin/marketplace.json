@@ -10,12 +10,13 @@
     {
       "name": "construction-doc-assistant",
       "source": "./plugins/construction-doc-assistant",
-      "version": "1.0.0",
-      "description": "建筑施工文档智能助手 - 文档管理、分析和报告生成",
+      "version": "1.3.0",
+      "description": "建筑施工文档智能助手 - 文档管理、分析和报告生成 (支持双模式解析)",
       "author": {
         "name": "Construction Team"
       },
-      "keywords": ["建筑", "文档管理", "资料检查"]
+      "keywords": ["建筑", "文档管理", "资料检查", "双模式解析"],
+      "changelog": "v1.3.0: 新增 summary/full 双模式文档解析,灵活控制解析深度"
     }
   ]
 }
