@@ -22,38 +22,88 @@
 
 ## 📦 安装
 
+### 系统要求
+
+- **Python**: 3.8 或更高版本
+- **Claude Code**: 最新版本
+- **操作系统**: macOS / Linux / Windows
+
 ### 方式 1: 从 GitHub Marketplace 安装(推荐)
+
+#### macOS / Linux 用户
 
 ```bash
 # 1. 添加 marketplace
-claude marketplace add z1w2r3/construction-marketplace
+/plugin marketplace add z1w2r3/construction-marketplace
 
 # 2. 安装插件
-claude marketplace install construction-doc-assistant
+/plugin install construction-doc-assistant@construction-marketplace
 
 # 3. 安装 Python 依赖(必需!)
-cd ~/.claude/plugins/construction-doc-assistant/mcp-servers/document-processor
+cd ~/.claude/plugins/marketplaces/construction-marketplace/plugins/construction-doc-assistant/mcp-servers/document-processor
 ./install.sh
 ```
 
-**⚠️ 重要**: 必须运行安装脚本安装 Python 依赖,否则文档解析功能无法工作!
+#### Windows 用户
+
+```powershell
+# 1. 在 Claude Code 中添加 marketplace
+/plugin marketplace add z1w2r3/construction-marketplace
+
+# 2. 安装插件
+/plugin install construction-doc-assistant@construction-marketplace
+
+# 3. 安装 Python 依赖(必需!)
+cd %USERPROFILE%\.claude\plugins\marketplaces\construction-marketplace\plugins\construction-doc-assistant\mcp-servers\document-processor
+install.bat
+
+# 4. 配置 MCP 服务器(Windows 专用步骤)
+cd %USERPROFILE%\.claude\plugins\marketplaces\construction-marketplace\plugins\construction-doc-assistant\mcp-servers
+setup-windows.bat
+
+# 5. 重启 VSCode
+# Ctrl + Shift + P → 输入 "Reload Window" → 回车
+```
+
+**📖 Windows 详细安装指南**: [WINDOWS-SETUP.md](mcp-servers/WINDOWS-SETUP.md)
+
+**⚠️ 重要**:
+- 必须运行安装脚本安装 Python 依赖,否则文档解析功能无法工作!
+- Windows 用户必须运行 `setup-windows.bat` 配置 MCP 服务器
 
 ### 方式 2: 本地开发安装
+
+#### macOS / Linux
 
 ```bash
 # 1. 克隆仓库
 git clone https://github.com/z1w2r3/construction-marketplace.git
 cd construction-marketplace/plugins/construction-doc-assistant
 
-# 2. 安装 Python 依赖(必需!)
+# 2. 安装 Python 依赖
 cd mcp-servers/document-processor
 ./install.sh
+```
 
-# 或手动安装
-pip3 install -r requirements.txt
+#### Windows
+
+```powershell
+# 1. 克隆仓库
+git clone https://github.com/z1w2r3/construction-marketplace.git
+cd construction-marketplace\plugins\construction-doc-assistant
+
+# 2. 安装 Python 依赖
+cd mcp-servers\document-processor
+install.bat
+
+# 3. 配置 MCP
+cd ..\
+setup-windows.bat
 ```
 
 ### 安装验证
+
+#### macOS / Linux
 
 ```bash
 # 验证所有依赖已正确安装
@@ -63,7 +113,36 @@ print('✅ 所有依赖已正确安装')
 "
 ```
 
-📖 详细安装说明请查看 [INSTALL.md](INSTALL.md)
+#### Windows
+
+```powershell
+# 验证 MCP 服务器状态
+# 在 Claude Code 中运行
+/debug mcp
+
+# 应显示: ✓ construction-doc-processor: running
+```
+
+### 常见安装问题
+
+#### macOS / Linux
+
+- **问题**: `./install.sh: Permission denied`
+  - **解决**: `chmod +x install.sh && ./install.sh`
+
+- **问题**: `python3: command not found`
+  - **解决**: 安装 Python 3.8+: https://www.python.org/downloads/
+
+#### Windows
+
+- **问题**: `未找到 Python`
+  - **解决**: 安装 Python 并勾选 "Add Python to PATH"
+
+- **问题**: MCP 服务器显示 `failed`
+  - **解决**: 确保已运行 `setup-windows.bat` 配置脚本
+
+- **问题**: `找不到 PowerShell`
+  - **解决**: 参考 [WINDOWS-SETUP.md](mcp-servers/WINDOWS-SETUP.md) 手动修改配置文件
 
 ## 🚀 快速开始
 
@@ -207,5 +286,6 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 
 ---
 
-**版本**: 1.0.0
-**更新日期**: 2024-10-13
+**版本**: 1.0.2
+**更新日期**: 2025-10-15
+**支持平台**: macOS / Linux / Windows
