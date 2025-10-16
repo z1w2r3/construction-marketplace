@@ -466,4 +466,206 @@
 
 ---
 
+## 六、用户自定义模板管理
+
+### 6.1 自定义模板创建流程
+
+用户可以通过两种方式创建自定义模板：
+
+**方式1：通过现有Word文档（推荐）**
+
+```bash
+/construction-summary --custom-template ~/Documents/我的报告模板.docx --save-template
+```
+
+系统会：
+1. 验证Word文档的可读性
+2. 自动提取文档的标题结构（Heading 1/2/3）
+3. 清理标题序号（"一、"、"1."等）
+4. 转换为标准模板JSON格式
+5. 保存到 `templates/report_templates.json`
+
+**提取规则**：
+- 识别所有 Heading 样式的段落（Heading 1, Heading 2, Heading 3）
+- 默认提取前3级标题（可通过MCP工具参数调整）
+- 自动清理常见序号格式：
+  - 中文序号：一、二、三、第一章
+  - 阿拉伯数字：1. 2. 1.1 1.2.3
+  - 括号编号：(1) (2)
+  - 字母编号：A. B.
+
+**方式2：手动编辑JSON文件**
+
+直接编辑 `templates/report_templates.json`，添加新模板定义：
+
+```json
+{
+  "templates": {
+    "custom_my_template": {
+      "name": "我的自定义模板",
+      "name_en": "My Custom Template",
+      "description": "适用于月度总结汇报",
+      "keywords": ["月度", "总结", "汇报"],
+      "priority": 60,
+      "structure": [
+        {
+          "title": "项目概况",
+          "level": 1,
+          "required": true,
+          "content_hints": ["基本信息", "主要工作"]
+        },
+        {
+          "title": "本月完成情况",
+          "level": 1,
+          "required": true,
+          "content_hints": ["进度", "成果"]
+        }
+      ],
+      "focus_data": ["进度数据", "完成情况"],
+      "extract_depth": "summary",
+      "formal_level": "medium",
+      "include_cover": true,
+      "include_appendix": false,
+      "source": "user_custom",
+      "created_date": "2024-10-16"
+    }
+  }
+}
+```
+
+### 6.2 自定义模板使用
+
+保存后的自定义模板可以像内置模板一样使用：
+
+```bash
+# 查看所有可用模板（包括自定义）
+/construction-summary --list-templates
+
+# 使用自定义模板
+/construction-summary --template custom_my_template
+
+# 或者直接使用Word文档（不保存）
+/construction-summary --custom-template ~/Documents/我的模板.docx
+```
+
+### 6.3 模板命名规范
+
+**内置模板**（不可修改）：
+- `trial_project` - 试点项目报告
+- `technical` - 专项技术报告
+- `acceptance` - 验收汇报材料
+- `progress` - 进度分析报告
+- `summary` - 项目总结报告
+
+**用户自定义模板**（推荐命名）：
+- `custom_<用户命名>` - 例如：`custom_monthly_report`
+- `custom_1`, `custom_2` - 按序号命名
+
+**命名要求**：
+- 只能包含小写字母、数字和下划线
+- 必须以字母开头
+- 不能与内置模板同名
+
+### 6.4 模板字段说明
+
+**必需字段**：
+- `name`: 模板中文名称
+- `structure`: 章节结构数组
+
+**可选字段**：
+- `name_en`: 英文名称
+- `description`: 适用场景描述
+- `keywords`: 关键词数组（用于智能匹配）
+- `priority`: 优先级（0-100，内置模板80-90，自定义模板50-70）
+- `focus_data`: 重点数据类型
+- `extract_depth`: 提取深度（"summary"/"full"）
+- `formal_level`: 正式程度（"high"/"medium"/"low"）
+- `include_cover`: 是否包含封面
+- `include_appendix`: 是否包含附件
+- `source`: 来源标识（"user_custom"）
+- `source_file`: 原Word文件名
+- `created_date`: 创建日期
+
+**structure数组元素格式**：
+```json
+{
+  "title": "章节标题",
+  "original_title": "原始标题（含序号）",
+  "level": 1,  // 标题级别 1/2/3
+  "required": true,  // 是否必需
+  "content_hints": ["提示1", "提示2"]  // 内容提示
+}
+```
+
+### 6.5 模板管理操作
+
+**查看所有模板**：
+```bash
+/construction-summary --list-templates
+```
+
+**删除自定义模板**：
+1. 打开 `templates/report_templates.json`
+2. 删除对应的模板对象
+3. 保存文件
+
+**修改自定义模板**：
+1. 打开 `templates/report_templates.json`
+2. 编辑对应的模板字段
+3. 保存文件
+
+**重命名模板**：
+1. 修改模板的 key 值（如 `custom_old` → `custom_new`）
+2. 同时更新 `name` 和 `name_en` 字段
+
+**导出/分享模板**：
+1. 复制 `templates/report_templates.json` 中的模板对象
+2. 分享JSON片段给其他用户
+3. 其他用户将JSON追加到自己的配置文件中
+
+### 6.6 最佳实践
+
+**创建模板时**：
+1. 使用有代表性的Word文档作为模板源
+2. 确保Word文档使用了标准的Heading样式
+3. 章节结构清晰，层级不超过3级
+4. 为模板起一个有意义的名称和描述
+
+**使用模板时**：
+1. 优先使用内置模板（经过充分测试）
+2. 自定义模板适用于特定场景的报告
+3. 定期检查生成的报告质量，调整模板配置
+
+**维护模板**：
+1. 定期清理不再使用的自定义模板
+2. 备份 `report_templates.json` 文件
+3. 记录模板的使用场景和效果
+
+### 6.7 常见问题
+
+**Q1: Word文档没有检测到标题？**
+- 确保文档使用了Word的Heading样式（不是手动加粗）
+- 在Word中查看：开始 → 样式 → 确认标题使用了"标题1"、"标题2"等样式
+
+**Q2: 提取的标题包含序号？**
+- 系统会自动清理常见序号格式
+- 如果未清理，请检查序号格式是否为特殊格式
+- 可以手动编辑JSON文件中的 `title` 字段
+
+**Q3: 自定义模板没有出现在列表中？**
+- 检查JSON格式是否正确（使用JSON验证工具）
+- 确认模板已保存到 `templates/report_templates.json`
+- 重新运行 `/construction-summary --list-templates`
+
+**Q4: 模板生成的报告质量不佳？**
+- 自定义模板缺少 `content_hints` 和 `focus_data` 字段
+- 建议参考内置模板添加这些字段
+- 或者使用内置模板，通过 `--focus` 参数定制重点
+
+**Q5: 如何恢复内置模板？**
+- 内置模板在插件更新时会自动恢复
+- 或者从插件仓库重新下载 `report_templates.json`
+
+---
+
 **使用说明**：Claude在执行 construction-summary 命令时，应始终参考本文档的规范和示例，确保生成的报告直接可交付，无需人工二次编辑。

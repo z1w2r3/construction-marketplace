@@ -7,12 +7,15 @@
 ## 📋 命令参数说明
 
 ```bash
-/construction-summary [范围] [--template <类型>] [--structure <结构>] [--focus <重点>] [--format <格式>] [--depth <深度>]
+/construction-summary [范围] [--template <类型>] [--custom-template <Word文件路径>] [--save-template] [--list-templates] [--structure <结构>] [--focus <重点>] [--format <格式>] [--depth <深度>]
 ```
 
 **参数说明**：
 - `[范围]`：可选，总结范围（如"智能建造"、"2024年度"、"主体结构阶段"）
-- `--template`：可选，指定报告模板（trial_project、technical、acceptance、progress、summary）
+- `--template`：可选，指定报告模板（trial_project、technical、acceptance、progress、summary或自定义模板名）
+- `--custom-template`：可选，使用自定义Word文档作为模板（提供Word文档路径）
+- `--save-template`：可选，保存自定义模板到插件模板库（仅与--custom-template一起使用）
+- `--list-templates`：可选，列出所有可用模板（内置+自定义）
 - `--structure`：可选，自定义章节结构（用"|"分隔，如"项目概况|技术应用|成效分析"）
 - `--focus`：可选，重点内容关键词（用","分隔，如"BIM应用,机器人效率,成本节约"）
 - `--format`：可选，报告正式程度（formal=正式、brief=简要、detailed=详细）
@@ -29,6 +32,15 @@
 # 指定模板
 /construction-summary --template trial_project
 
+# 使用自定义Word模板
+/construction-summary --custom-template ~/Documents/我的报告模板.docx
+
+# 使用自定义模板并保存为永久模板
+/construction-summary --custom-template ~/Documents/我的报告模板.docx --save-template
+
+# 列出所有可用模板
+/construction-summary --list-templates
+
 # 完全自定义
 /construction-summary 2024年度 --structure "项目概况|主要工作|经验总结" --focus "BIM,机器人,成本"
 ```
@@ -39,9 +51,78 @@
 
 你现在要执行项目总结生成任务，参数: $ARGUMENTS
 
-### 第一步：读取项目配置和模板系统
+### 第一步：初始化和特殊参数处理
 
-#### 1.1 读取项目配置
+#### 1.0 检查特殊参数
+
+**如果用户提供了 `--list-templates` 参数**，执行以下步骤后终止：
+
+1. 动态定位插件目录：
+```bash
+PLUGIN_DIR=$(find ~/.claude/plugins -type d -name "construction-doc-assistant" 2>/dev/null | head -1)
+```
+
+2. 读取模板配置文件：
+```
+Read: $PLUGIN_DIR/templates/report_templates.json
+```
+
+3. 解析JSON，提取所有模板信息
+
+4. 格式化输出模板列表：
+```markdown
+📋 可用报告模板列表
+
+【内置模板】
+1. trial_project - 试点项目报告
+   适用于智能建造试点、示范项目等申报材料
+
+2. technical - 专项技术报告
+   适用于BIM应用、机器人应用等技术总结
+
+3. acceptance - 验收汇报材料
+   适用于工程验收、检查、评审等正式场合
+
+4. progress - 进度分析报告
+   适用于进度分析、进度偏差分析等
+
+5. summary - 项目总结报告
+   适用于综合性总结、年度总结、阶段总结
+
+【用户自定义模板】
+（如果有自定义模板，列出格式如下）
+6. custom_xxx - 模板名称
+   适用于：xxx场景
+   创建时间：YYYY-MM-DD
+
+使用方式：/construction-summary --template <模板代码>
+```
+
+5. **终止执行**，不再继续后续步骤
+
+---
+
+**如果没有 `--list-templates` 参数**，继续下面步骤：
+
+#### 1.1 动态定位插件目录
+
+使用 Bash 工具查找插件安装路径：
+```bash
+PLUGIN_DIR=$(find ~/.claude/plugins -type d -name "construction-doc-assistant" 2>/dev/null | head -1)
+
+if [ -z "$PLUGIN_DIR" ]; then
+  echo "错误：未找到插件目录"
+  exit 1
+fi
+
+echo "$PLUGIN_DIR"
+```
+
+保存结果到内部变量 `$PLUGIN_DIR`
+
+**重要**：后续所有模板文件读取都使用 `$PLUGIN_DIR/templates/xxx` 路径
+
+#### 1.2 读取项目配置
 
 使用 Read 工具读取 `.claude/CLAUDE-construction.md`：
 ```
@@ -58,33 +139,196 @@
     - 工程地点
 ```
 
-#### 1.2 读取模板配置
+#### 1.3 读取模板配置
 
-使用 Read 工具读取 `${CLAUDE_PLUGIN_ROOT}/templates/report_templates.json`：
+使用 Read 工具读取：
 ```
+$PLUGIN_DIR/templates/report_templates.json
+```
+
 获取：
-- 5种报告模板定义
+- 所有报告模板定义（内置+自定义）
 - 模板匹配规则
 - 引用格式规范
 - 过滤规则
+
+#### 1.4 读取模板匹配指南
+
+使用 Read 工具读取：
+```
+$PLUGIN_DIR/templates/template_matcher.md
 ```
 
-#### 1.3 读取模板匹配指南
-
-使用 Read 工具读取 `${CLAUDE_PLUGIN_ROOT}/templates/template_matcher.md`：
-```
 获取：
 - 智能匹配算法详细说明
 - 深度内容提取策略
 - 专业报告生成规范
 - 质量检查清单
-```
 
 **重要**：这两个文件是生成高质量报告的关键指南，必须仔细阅读并严格遵守！
 
 ---
 
 ### 第二步：解析用户需求和智能模板匹配
+
+#### 2.0 处理自定义模板（如果提供）
+
+**如果用户提供了 `--custom-template` 参数**：
+
+**步骤1：验证自定义模板文件**
+
+调用 MCP 工具验证文件：
+```
+mcp__construction_doc_processor__validate_document
+参数：
+  file_path: [用户提供的Word文件路径]
+```
+
+如果验证失败：
+```
+提示："❌ 自定义模板文件无效或无法读取"
+提示："文件路径：[路径]"
+提示："请检查文件是否存在且格式正确（必须是.docx格式）"
+提示："回退到标准模板选择流程..."
+```
+
+继续执行标准模板选择流程（跳到2.2）
+
+**步骤2：提取Word文档结构**
+
+调用 MCP 工具提取结构：
+```
+mcp__construction_doc_processor__extract_document_structure
+参数：
+  file_path: [用户提供的Word文件路径]
+  max_depth: 3
+  clean_numbering: true
+```
+
+**步骤3：转换为模板结构**
+
+将返回的 JSON 数据转换为模板格式：
+```json
+{
+  "name": "用户自定义模板",
+  "name_en": "Custom Template",
+  "description": "用户提供的自定义模板",
+  "keywords": [],
+  "priority": 95,
+  "structure": [提取的结构数据],
+  "focus_data": [],
+  "extract_depth": "summary",
+  "formal_level": "medium",
+  "include_cover": true,
+  "include_appendix": false,
+  "source": "user_custom",
+  "source_file": "[原Word文件名]",
+  "created_date": "[当前日期 YYYY-MM-DD]"
+}
+```
+
+显示提取结果：
+```
+✅ 自定义模板解析成功
+
+📄 源文件：[文件名]
+📊 检测到以下结构：
+  - 一级标题：X个
+  - 二级标题：X个
+  - 三级标题：X个
+
+📑 章节预览：
+  1. [标题1]
+  2. [标题2]
+  3. [标题3]
+  ... (最多显示10个)
+```
+
+**步骤4：询问是否保存模板**
+
+如果用户**没有**提供 `--save-template` 参数，询问：
+```
+💾 是否将此模板保存到插件模板库？
+
+保存后可以在后续使用中通过 --template 参数调用，无需重复提供Word文件。
+
+是否保存？[y/N]：
+```
+
+如果用户提供了 `--save-template` 参数，或者回答 'y'：
+
+**步骤5：保存自定义模板**
+
+询问模板信息：
+```
+请为该模板命名（用于后续 --template 参数）：
+默认名称：custom_[时间戳]
+您的命名：
+```
+
+```
+请简要描述该模板的适用场景（可选）：
+示例：月度总结汇报、技术方案评审等
+您的描述：
+```
+
+读取现有模板配置：
+```
+Read: $PLUGIN_DIR/templates/report_templates.json
+```
+
+追加新模板到JSON：
+```json
+{
+  "templates": {
+    ...existing templates...,
+
+    "custom_用户命名": {
+      "name": "用户输入的名称",
+      "name_en": "Custom xxx",
+      "description": "用户输入的描述",
+      "keywords": [],
+      "priority": 60,
+      "structure": [...提取的结构...],
+      "focus_data": [],
+      "extract_depth": "summary",
+      "formal_level": "medium",
+      "include_cover": true,
+      "include_appendix": false,
+      "source": "user_custom",
+      "source_file": "[原Word文件名]",
+      "created_date": "YYYY-MM-DD"
+    }
+  }
+}
+```
+
+使用 Write 工具写回：
+```
+Write: $PLUGIN_DIR/templates/report_templates.json
+  content: [更新后的完整JSON]
+```
+
+显示保存结果：
+```
+✅ 模板已保存
+
+模板名称：custom_用户命名
+模板文件：templates/report_templates.json
+后续使用：/construction-summary --template custom_用户命名
+
+💡 提示：
+  - 可以手动编辑该文件修改模板配置
+  - 可以通过 /construction-summary --list-templates 查看所有模板
+```
+
+**步骤6：使用该模板继续**
+
+将提取/转换的模板结构作为当前使用的模板，跳过后续的模板选择流程，直接进入"第三步：文档扫描"。
+
+---
+
+**如果用户没有提供 `--custom-template` 参数**，继续下面步骤：
 
 #### 2.1 解析命令参数
 

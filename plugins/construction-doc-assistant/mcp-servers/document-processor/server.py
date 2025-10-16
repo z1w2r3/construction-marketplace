@@ -296,6 +296,32 @@ async def list_tools() -> list[Tool]:
                 },
                 "required": ["markdown_file", "output_file"]
             }
+        ),
+
+        # 10. 提取文档结构(新增 - 用于自定义模板)
+        Tool(
+            name="extract_document_structure",
+            description="提取Word文档的章节结构(标题层级),用于创建自定义报告模板",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "Word文档的绝对路径"
+                    },
+                    "max_depth": {
+                        "type": "integer",
+                        "description": "提取的标题最大层级(1-9,默认3)",
+                        "default": 3
+                    },
+                    "clean_numbering": {
+                        "type": "boolean",
+                        "description": "是否清理标题序号(如'一、'、'1.'等),默认true",
+                        "default": True
+                    }
+                },
+                "required": ["file_path"]
+            }
         )
     ]
 
@@ -417,6 +443,19 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
             return [TextContent(
                 type="text",
                 text=_format_generation_result(result)
+            )]
+
+        # 10. 提取文档结构(新增 - 用于自定义模板)
+        elif name == "extract_document_structure":
+            result = _extract_document_structure(
+                arguments["file_path"],
+                max_depth=arguments.get("max_depth", 3),
+                clean_numbering=arguments.get("clean_numbering", True)
+            )
+
+            return [TextContent(
+                type="text",
+                text=json.dumps(result, ensure_ascii=False, indent=2)
             )]
 
         else:
@@ -684,14 +723,125 @@ def _format_generation_result(result: dict) -> str:
     return output
 
 
+def _extract_document_structure(file_path: str, max_depth: int = 3, clean_numbering: bool = True) -> dict:
+    """
+    提取Word文档的章节结构
+
+    Args:
+        file_path: Word文档路径
+        max_depth: 最大标题层级
+        clean_numbering: 是否清理标题序号
+
+    Returns:
+        包含文档结构信息的字典
+    """
+    import re
+    from docx import Document
+
+    try:
+        logger.info(f"提取文档结构: {file_path}")
+
+        # 打开Word文档
+        doc = Document(file_path)
+
+        structure = []
+
+        # 遍历段落,提取标题
+        for paragraph in doc.paragraphs:
+            # 检查是否是标题样式
+            style_name = paragraph.style.name
+
+            # 匹配 Heading 样式
+            if style_name.startswith('Heading'):
+                # 提取标题级别
+                level_match = re.match(r'Heading\s*(\d+)', style_name)
+                if not level_match:
+                    continue
+
+                level = int(level_match.group(1))
+
+                # 超过最大层级则跳过
+                if level > max_depth:
+                    continue
+
+                # 获取标题文本
+                title = paragraph.text.strip()
+
+                if not title:  # 跳过空标题
+                    continue
+
+                # 清理标题序号
+                title_clean = title
+                if clean_numbering:
+                    # 清理常见序号格式
+                    # 匹配: "一、", "1.", "1.1", "(1)", "第一章"等
+                    patterns = [
+                        r'^[一二三四五六七八九十]+[、\.]?\s*',  # 中文数字 + 顿号/点
+                        r'^\d+[\.\)、]\s*',                      # 阿拉伯数字 + 点/括号/顿号
+                        r'^\d+\.\d+[\.\s]',                      # 多级编号 (1.1, 1.2.3)
+                        r'^\(\d+\)\s*',                          # 括号数字
+                        r'^第[一二三四五六七八九十\d]+[章节条款]\s*', # 第X章/节
+                        r'^[A-Z][\.\)]\s*',                      # 大写字母编号
+                    ]
+
+                    for pattern in patterns:
+                        title_clean = re.sub(pattern, '', title_clean)
+
+                    title_clean = title_clean.strip()
+
+                # 如果清理后为空,使用原标题
+                if not title_clean:
+                    title_clean = title
+
+                structure.append({
+                    "title": title_clean,
+                    "original_title": title,
+                    "level": level,
+                    "required": True,
+                    "content_hints": []
+                })
+
+        # 统计信息
+        level_counts = {}
+        for item in structure:
+            level = item["level"]
+            level_counts[level] = level_counts.get(level, 0) + 1
+
+        result = {
+            "status": "success",
+            "file_path": file_path,
+            "file_name": os.path.basename(file_path),
+            "total_headings": len(structure),
+            "headings_by_level": {
+                f"level_{i}": level_counts.get(i, 0)
+                for i in range(1, max_depth + 1)
+            },
+            "max_depth": max_depth,
+            "clean_numbering": clean_numbering,
+            "structure": structure
+        }
+
+        logger.info(f"提取成功: 共 {len(structure)} 个标题")
+        return result
+
+    except Exception as e:
+        logger.error(f"提取文档结构失败: {e}", exc_info=True)
+        return {
+            "status": "error",
+            "file_path": file_path,
+            "error": str(e),
+            "error_type": type(e).__name__
+        }
+
+
 async def main():
     """启动 MCP 服务器"""
     logger.info("=" * 60)
-    logger.info("建筑施工文档处理 MCP 服务器 v1.3.0")
+    logger.info("建筑施工文档处理 MCP 服务器 v1.4.0")
     logger.info("=" * 60)
     logger.info("支持的文档格式: Word (.docx), Excel (.xlsx), PowerPoint (.pptx), PDF (.pdf)")
-    logger.info("提供工具: 文档验证、解析、摘要提取、批量处理、Word报告生成")
-    logger.info("新增功能: 双模式解析 (summary/full) - 灵活控制解析深度")
+    logger.info("提供工具: 文档验证、解析、摘要提取、批量处理、Word报告生成、文档结构提取")
+    logger.info("新增功能: 文档结构提取工具 - 支持自定义报告模板创建")
     logger.info("=" * 60)
 
     async with stdio_server() as (read_stream, write_stream):

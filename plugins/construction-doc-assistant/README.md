@@ -1,6 +1,6 @@
 # 建筑施工文档助手 Claude Code 插件
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/z1w2r3/construction-marketplace)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/z1w2r3/construction-marketplace)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 专为建筑施工行业设计的智能文档管理工具,帮助项目团队高效管理、分析和整理项目文档。
@@ -12,6 +12,8 @@
 - 📊 **标准化输出** - 符合建筑行业规范的报告格式
 - 🚀 **易于使用** - 简单的命令行接口
 - 🐍 **Python 集成** - 支持 Word/Excel/PDF 文档解析
+- 🎨 **自定义模板** - 支持使用Word文档创建自定义报告模板
+- 🔄 **模板复用** - 保存常用模板,随时调用
 
 ## 🎯 目标用户
 
@@ -195,7 +197,11 @@ claude
 
 ### 方案生成
 - `/construction-organize <资料类型>` - 生成整理方案
-- `/construction-summary [范围]` - 生成项目总结
+- `/construction-summary [范围] [选项]` - 生成项目总结报告
+  - `--template <类型>` - 指定报告模板
+  - `--custom-template <Word文件>` - 使用自定义Word模板
+  - `--save-template` - 保存自定义模板
+  - `--list-templates` - 列出所有可用模板
 - `/construction-progress` - 分析项目进度
 
 ### 帮助支持
@@ -231,6 +237,99 @@ claude
 ```bash
 pip install mcp python-docx openpyxl PyPDF2
 ```
+
+## 🎨 自定义模板功能 (v1.1.0新增)
+
+### 功能概述
+
+从v1.1.0开始,插件支持使用您自己的Word文档作为报告模板,实现完全自定义的报告结构。
+
+### 使用场景
+
+- **月度总结** - 使用公司固定的月度总结模板
+- **专项汇报** - 创建特定技术专项的汇报模板
+- **验收材料** - 按照业主要求的格式生成验收文档
+- **内部报告** - 使用团队约定的报告格式
+
+### 快速开始
+
+#### 1. 查看可用模板
+
+```bash
+/construction-summary --list-templates
+```
+
+查看所有内置模板和已保存的自定义模板。
+
+#### 2. 使用自定义Word模板(临时使用)
+
+```bash
+/construction-summary --custom-template ~/Documents/月度总结模板.docx
+```
+
+系统会:
+- 自动提取Word文档的章节结构(标题1/2/3)
+- 根据章节结构生成报告
+- 本次使用后不保存模板
+
+#### 3. 保存自定义模板(长期复用)
+
+```bash
+/construction-summary --custom-template ~/Documents/月度总结模板.docx --save-template
+```
+
+系统会询问:
+- 模板名称(如: `custom_monthly_report`)
+- 适用场景描述
+- 保存后可以通过 `--template` 参数随时调用
+
+#### 4. 使用已保存的模板
+
+```bash
+/construction-summary --template custom_monthly_report
+```
+
+### Word模板要求
+
+**✅ 必须使用标题样式**:
+- 在Word中使用"标题1"、"标题2"、"标题3"样式
+- 不要只是手动加粗文字
+
+**✅ 支持自动清理序号**:
+- "一、项目概况" → "项目概况"
+- "1. 基本信息" → "基本信息"
+- "(1) 建设规模" → "建设规模"
+- 系统会自动清理常见序号格式
+
+**示例模板结构**:
+```
+一、项目概况            (标题1)
+  1.1 基本信息          (标题2)
+  1.2 参建单位          (标题2)
+二、本月完成情况        (标题1)
+  2.1 施工进度          (标题2)
+  2.2 质量管理          (标题2)
+三、存在问题及建议      (标题1)
+```
+
+### 模板管理
+
+**查看所有模板**:
+```bash
+/construction-summary --list-templates
+```
+
+**删除自定义模板**:
+1. 打开 `~/.claude/plugins/.../templates/report_templates.json`
+2. 删除对应的模板对象
+3. 保存文件
+
+**修改模板**:
+直接编辑 `report_templates.json` 文件
+
+详细文档: [templates/template_matcher.md - 第六章](templates/template_matcher.md)
+
+---
 
 ## 💡 使用示例
 
