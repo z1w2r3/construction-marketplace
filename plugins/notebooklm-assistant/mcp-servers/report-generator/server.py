@@ -219,7 +219,7 @@ async def generate_word_report(
     # 4. 添加目录占位符
     doc.add_page_break()
     heading = doc.add_heading("目录", level=1)
-    p = doc.add_paragraph("[此处应插入自动目录，请在 Word 中使用"引用"-"目录"功能更新]")
+    p = doc.add_paragraph("[此处应插入自动目录，请在 Word 中使用\"引用\"-\"目录\"功能更新]")
     p.runs[0].font.italic = True
     p.runs[0].font.color.rgb = RGBColor(128, 128, 128)
 
