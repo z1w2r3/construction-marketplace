@@ -16,6 +16,16 @@
         "name": "Construction Team"
       },
       "keywords": ["建筑", "文档管理", "资料检查", "双模式解析"]
+    },
+    {
+      "name": "notebooklm-assistant",
+      "source": "./plugins/notebooklm-assistant",
+      "version": "1.0.0",
+      "description": "智能文档助手 - 类似 Google NotebookLM 的知识库问答、深度研究和专业报告生成工具",
+      "author": {
+        "name": "Construction Team"
+      },
+      "keywords": ["notebooklm", "智能问答", "文档分析", "报告生成", "document-skills"]
     }
   ]
 }

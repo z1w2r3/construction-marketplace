@@ -1,0 +1,23 @@
+{
+  "name": "notebooklm-assistant",
+  "version": "1.0.0",
+  "description": "智能文档助手 - 类似 Google NotebookLM 的知识库问答、深度研究和专业报告生成工具",
+  "author": {
+    "name": "Construction Team"
+  },
+  "homepage": "https://github.com/z1w2r3/construction-marketplace",
+  "repository": "https://github.com/z1w2r3/construction-marketplace.git",
+  "keywords": [
+    "notebooklm",
+    "knowledge-base",
+    "document-qa",
+    "智能问答",
+    "文档分析",
+    "报告生成",
+    "document-skills"
+  ],
+  "license": "MIT",
+  "commands": "./commands",
+  "skills": "./skills",
+  "mcpServers": "./mcp-servers/.mcp.json"
+}
