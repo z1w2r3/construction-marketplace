@@ -18,6 +18,5 @@
   ],
   "license": "MIT",
   "commands": "./commands",
-  "skills": "./skills",
   "mcpServers": "./mcp-servers/.mcp.json"
 }
