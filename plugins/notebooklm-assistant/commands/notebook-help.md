@@ -305,7 +305,7 @@ A: PDF、Word (.docx)、Excel (.xlsx)、PowerPoint (.pptx)、Markdown (.md)、�
 A: 不会！所有操作都是只读的，绝不修改您的原始文档。
 
 ### Q: 如何导出 PDF 报告？
-A: 生成 Word 报告后，可以使用 MCP 工具 `convert_to_pdf` 转换（需要安装 LibreOffice）。
+A: 生成 Word 报告后，可以使用 `soffice --headless --convert-to pdf` 命令转换（需要安装 LibreOffice）。
 
 ### Q: 索引需要多久更新一次？
 A: 添加新文档后手动运行 `/notebook-index`，未来会支持自动检测。

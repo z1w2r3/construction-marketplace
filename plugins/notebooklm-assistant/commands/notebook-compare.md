@@ -24,9 +24,9 @@ smart-retrieval(query="对象A")
 smart-retrieval(query="对象B")
 ```
 
-### 3. 调用官方 Compare Skill
+### 3. 使用 Document Skills 进行对比
 
-参考 `/skill official/docx/SKILL` 的对比方法:
+使用 **Skill tool** 调用对应的 document skill (docx/pdf/xlsx) 进行对比:
 - 提取两边的关键特征
 - 识别差异和共同点
 - 生成对比矩阵

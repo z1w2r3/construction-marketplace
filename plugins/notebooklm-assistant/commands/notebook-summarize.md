@@ -17,11 +17,11 @@
 
 ### 2. 检索文档
 
-使用 `/skill custom/smart-retrieval`（如果有主题）
+使用 **Skill tool** 调用 `smart-retrieval` skill（如果有主题）
 
-### 3. 调用官方 Summarize Skill
+### 3. 生成摘要
 
-参考 `/skill official/docx/SKILL` 中的摘要方法:
+使用 **Skill tool** 调用对应的 document skills (docx/pdf) 进行摘要:
 - 提取关键要点
 - 压缩冗余信息
 - 保持核心观点

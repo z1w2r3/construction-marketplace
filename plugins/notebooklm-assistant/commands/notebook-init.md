@@ -77,8 +77,8 @@ mkdir -p notebooklm-outputs/{summaries,insights,reports,chat-history}
 正在扫描文档并生成索引...
 ```
 
-然后调用 MCP 工具 `scan_directory` 扫描所有文档源路径:
-- 对每个路径调用 `scan_directory` 工具
+然后使用 **Skill tool** 调用 `filesystem-scan` skill 扫描所有文档源路径:
+- 对每个路径调用 filesystem-scan skill
 - 合并所有索引结果
 - 保存到 `.notebooklm/index/metadata.json`
 

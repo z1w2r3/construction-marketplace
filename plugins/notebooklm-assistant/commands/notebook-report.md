@@ -26,9 +26,9 @@
 - **报告长度**: 简明 / 标准 / 详细（默认：标准）
 - **特殊要求**: 是否需要特定章节、图表等
 
-#### 1.2 调用 Custom Skill: report-structure
+#### 1.2 调用 report-structure Skill
 
-使用 `/skill custom/report-structure` 生成报告大纲:
+使用 **Skill tool** 调用 `report-structure` skill 生成报告大纲:
 
 **输入**:
 - topic: $ARGUMENTS 中的主题
@@ -72,11 +72,11 @@
 
 #### 2.1 调用 Smart Retrieval Skill
 
-使用 `/skill custom/smart-retrieval` 找到相关文档:
+使用 **Skill tool** 调用 `smart-retrieval` skill 找到相关文档:
 
 **示例**（第一章 - 背景介绍）:
 ```
-使用 /skill custom/smart-retrieval:
+使用 Skill tool 调用 smart-retrieval:
 - query: "背景 + 目的 + 项目介绍"
 - knowledge_base_path: [从配置读取]
 - top_k: 5
@@ -86,11 +86,11 @@
 
 #### 2.2 调用官方 Document Skills
 
-根据章节需求调用相应的 Skill:
+根据章节需求使用 **Skill tool** 调用相应的 Skill:
 
 **示例 1** - 深度研究（第一章）:
 ```
-使用 /skill official/docx/SKILL 或 official/pdf/SKILL:
+使用 Skill tool 调用 docx 或 pdf skill:
 - 读取背景文档
 - 提取关键信息
 - 综合多个来源
@@ -98,7 +98,7 @@
 
 **示例 2** - 数据提取（第二章）:
 ```
-使用 /skill official/xlsx/SKILL:
+使用 Skill tool 调用 xlsx skill:
 - 提取 Excel 表格数据
 - 统计关键指标
 - 生成汇总表
@@ -113,7 +113,7 @@
 
 #### 2.3 调用 Citation Manager Skill
 
-使用 `/skill custom/citation-manager` 管理引用:
+使用 **Skill tool** 调用 `citation-manager` skill 管理引用:
 - 追踪所有信息来源
 - 生成内联引用
 - 准备参考文献列表
@@ -135,9 +135,9 @@
 - 数据必须标注来源
 - 逻辑清晰，层次分明
 
-#### 3.2 调用 Data Visualization Skill
+#### 3.2 识别需要图表的数据
 
-使用 `/skill custom/data-visualization` 识别需要图表的数据:
+分析提取的结构化数据,识别适合可视化的内容:
 
 **输入**: 提取的结构化数据
 **输出**: 图表建议（类型、数据、描述）
@@ -201,19 +201,96 @@
 - `summary` → business 风格
 - `comparison` → technical 风格
 
-#### 4.2 调用 MCP Report Generator
+#### 4.2 使用 DOCX Skill 生成 Word 报告
 
-使用 MCP 工具 `generate_word_report`:
+调用 **Skill tool** 使用 `docx` skill:
 
+**步骤**:
+1. 使用 Skill tool 调用 `docx` skill
+2. 读取 [`docx-js.md`](../skills/docx/docx-js.md) 获取完整的 docx-js API 文档
+3. 编写 JavaScript/TypeScript 代码生成 Word 文档:
+
+```javascript
+const { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell } = require("docx");
+const fs = require("fs");
+
+// 根据 Report Content 对象构建 Word 文档
+const doc = new Document({
+  sections: [{
+    properties: {},
+    children: [
+      // 标题页
+      new Paragraph({
+        text: reportContent.title,
+        heading: HeadingLevel.TITLE,
+        alignment: "center"
+      }),
+      new Paragraph({
+        text: `作者: ${reportContent.author}`,
+        alignment: "center"
+      }),
+      new Paragraph({
+        text: `日期: ${reportContent.date}`,
+        alignment: "center"
+      }),
+
+      // 摘要
+      new Paragraph({
+        text: "摘要",
+        heading: HeadingLevel.HEADING_1
+      }),
+      new Paragraph({
+        text: reportContent.abstract
+      }),
+
+      // 逐章节生成
+      ...reportContent.chapters.flatMap(chapter => [
+        new Paragraph({
+          text: chapter.title,
+          heading: HeadingLevel.HEADING_1
+        }),
+        ...chapter.sections.flatMap(section => [
+          new Paragraph({
+            text: section.title,
+            heading: HeadingLevel.HEADING_2
+          }),
+          new Paragraph({
+            text: section.content
+          }),
+          // 如果有表格
+          ...(section.table ? [createTable(section.table)] : [])
+        ])
+      ]),
+
+      // 参考文献
+      new Paragraph({
+        text: "参考文献",
+        heading: HeadingLevel.HEADING_1
+      }),
+      ...reportContent.references.map((ref, index) =>
+        new Paragraph({
+          text: ref.formatted_citation,
+          numbering: {
+            reference: "references",
+            level: 0
+          }
+        })
+      )
+    ]
+  }]
+});
+
+// 导出为 .docx 文件
+Packer.toBuffer(doc).then(buffer => {
+  fs.writeFileSync("notebooklm-outputs/reports/报告标题-YYYYMMDD.docx", buffer);
+  console.log("✅ Word 报告生成完成");
+});
 ```
-mcp_tool: generate_word_report
-params: {
-  template: "default",
-  content: {上面构建的 Report Content 对象},
-  style: "academic",
-  output_path: "notebooklm-outputs/reports/报告标题-YYYYMMDD.docx"
-}
-```
+
+**注意**:
+- 根据 `style` 参数调整字体、颜色、间距等格式
+- 图表生成占位符段落,提示用户手动插入
+- 确保所有依赖已安装 (`npm install docx`)
 
 #### 4.3 生成 Markdown 预览版
 
@@ -274,7 +351,7 @@ params: {
 2. 更新目录（引用 → 更新目录）
 3. 根据数据表手动插入图表（或保留占位符）
 4. 如需修改，使用: `/notebook-report-revise [章节号] [修改说明]`
-5. 导出 PDF: 使用 MCP 工具 `convert_to_pdf`
+5. 导出 PDF: 使用 `soffice --headless --convert-to pdf` 命令
 
 ## 🔍 质量检查结果
 ✅ 所有章节完整
@@ -328,11 +405,12 @@ params: {
 ```
 
 ### 导出 PDF
+```bash
+# 使用 LibreOffice 将 Word 文档转换为 PDF
+soffice --headless --convert-to pdf "报告路径.docx" --outdir "notebooklm-outputs/reports/"
 ```
-使用 MCP 工具 convert_to_pdf:
-- docx_path: "报告路径.docx"
-- pdf_path: "报告路径.pdf"
-```
+
+**注意**: 确保已安装 LibreOffice (`sudo apt-get install libreoffice`)
 
 ---
 

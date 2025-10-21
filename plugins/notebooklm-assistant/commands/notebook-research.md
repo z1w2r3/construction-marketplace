@@ -12,13 +12,13 @@
 
 ### 1. 检索相关文档
 
-使用 `/skill custom/smart-retrieval`:
+使用 **Skill tool** 调用 `smart-retrieval` skill:
 - query: $ARGUMENTS
 - top_k: 10（深度研究需要更多文档）
 
-### 2. 调用官方 Research Skill
+### 2. 深度阅读文档
 
-参考 `/skill official/docx/SKILL` 和 `/skill official/pdf/SKILL` 进行深度阅读。
+使用 **Skill tool** 调用对应的 document skills (docx/pdf) 进行深度阅读。
 
 对每个文档:
 - 提取核心观点
@@ -27,7 +27,7 @@
 
 ### 3. 综合分析
 
-使用 `/skill custom/multi-doc-synthesis`:
+进行多文档综合分析:
 - analysis_type: "pattern"（模式发现）
 - 识别共同主题
 - 发现隐含关系

@@ -153,9 +153,9 @@ Claude 根据问题决定读取哪些文档。
             └────────┬────────────────┘
                      │
 ┌────────────────────▼──────────────────────────┐
-│            MCP Servers (工具层)                │
-│  - filesystem-indexer (文档索引和检索)         │
-│  - report-generator (专业报告生成)             │
+│          新增 Skills (辅助层)                   │
+│  - filesystem-scan (文件系统扫描)              │
+│  - document-preview (文档预览提取)             │
 └───────────────────────────────────────────────┘
 ```
 
@@ -230,23 +230,6 @@ Claude 根据问题决定读取哪些文档。
 - /Users/you/Dropbox/Research
 ```
 
-### MCP 服务器配置
-
-编辑 `mcp-servers/.mcp.json`（高级用户）:
-
-```json
-{
-  "mcpServers": {
-    "notebooklm-filesystem": {
-      "command": "${CLAUDE_PLUGIN_ROOT}/mcp-servers/filesystem-indexer/run.sh",
-      "env": {
-        "LOG_LEVEL": "INFO"
-      }
-    }
-  }
-}
-```
-
 ---
 
 ## 🔒 安全与隐私
@@ -286,11 +269,6 @@ Claude 根据问题决定读取哪些文档。
 1. 确保安装了 `python-docx`: `pip install python-docx`
 2. 检查输出目录权限
 3. 重新初始化: `/notebook-init`
-
-### 问题：MCP 服务器无法启动
-
-**解决方案**:
-参考 [INSTALL.md](INSTALL.md) 的完整安装步骤。
 
 ---
 
